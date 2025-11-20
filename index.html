@@ -4,327 +4,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מדפסת מדבקות שטח (סאבקו)</title>
-    <!-- טעינת ספריית סריקת ברקוד (חייב אינטרנט רק עבור זה) -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.0.0/dist/jsQR.js"></script>
     
     <style>
-        /* --- עיצוב פנימי מלא (מחליף את Tailwind) --- */
-        :root {
-            --primary-color: #2563eb; /* כחול */
-            --primary-hover: #1d4ed8;
-            --success-color: #16a34a; /* ירוק */
-            --success-hover: #15803d;
-            --danger-color: #dc2626; /* אדום */
-            --danger-hover: #b91c1c;
-            --bg-color: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-color: #1f2937;
-            --border-color: #d1d5db;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            direction: rtl;
-            box-sizing: border-box;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        h1 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-            font-size: 1.8rem;
-        }
-
-        h2 {
-            font-size: 1.25rem;
-            margin-bottom: 10px;
-            margin-top: 0;
-            color: #374151;
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 5px;
-        }
-
-        /* הודעות סטטוס */
-        #statusMessage {
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            background-color: #eff6ff;
-            border: 1px solid #bfdbfe;
-            color: #1e40af;
-        }
-        #statusMessage.success { background-color: #dcfce7; border-color: #86efac; color: #166534; }
-        #statusMessage.error { background-color: #fee2e2; border-color: #fca5a5; color: #991b1b; }
-
-        /* אזורי שליטה */
-        .section {
-            background-color: #f9fafb;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 20px;
-        }
-
-        .control-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-
-        /* שדות קלט */
-        input[type="text"],
-        input[type="number"],
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
-            box-sizing: border-box;
-            font-family: inherit;
-        }
+        /* עיצוב פנימי */
+        :root { --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; direction: rtl; }
+        .container { max-width: 600px; margin: 0 auto; background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        textarea { resize: vertical; }
+        h1 { text-align: center; color: var(--primary); margin-top: 0; font-size: 1.5rem; }
+        .version-tag { font-size: 0.8rem; color: #666; display: block; margin-top: -5px; margin-bottom: 15px; }
 
-        /* כפתורים */
+        h2 { font-size: 1.2rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-top: 20px; }
+
         button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            color: white;
-            text-align: center;
-            min-width: 120px;
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            font-size: 1rem; font-weight: bold; cursor: pointer; color: white;
+            margin-top: 8px;
         }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-primary { background: #2563eb; }
+        .btn-danger { background: #dc2626; }
+        .btn-outline { background: transparent; border: 2px solid #2563eb; color: #2563eb; }
 
-        button.btn-primary { background-color: var(--primary-color); }
-        button.btn-primary:hover { background-color: var(--primary-hover); }
+        input, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; box-sizing: border-box; }
 
-        button.btn-success { background-color: var(--success-color); }
-        button.btn-success:hover { background-color: var(--success-hover); }
-        
-        button.btn-danger { background-color: var(--danger-color); }
-        button.btn-danger:hover { background-color: var(--danger-hover); }
+        #statusMessage { padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px; font-weight: bold; background: #e0f2fe; color: #0369a1; }
+        .success { background: #dcfce7 !important; color: #15803d !important; }
+        .error { background: #fee2e2 !important; color: #b91c1c !important; }
 
-        button:disabled {
-            background-color: #9ca3af;
-            cursor: not-allowed;
-        }
+        /* תצוגה מקדימה */
+        #previewArea { background: #e5e7eb; padding: 20px; border-radius: 8px; display: flex; justify-content: center; min-height: 160px; }
 
-        button.btn-link {
-            background: none;
-            color: var(--primary-color);
-            text-decoration: underline;
-            padding: 5px;
-            font-size: 0.9rem;
-            width: auto;
-            min-width: auto;
-            flex: none;
-        }
+        /* מדבקה */
+        .label { width: 30mm; height: 30mm; background: white; border: 1px solid black; padding: 2mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
+        .label-header { font-size: 9pt; font-weight: bold; }
+        .label-desc { font-size: 8pt; line-height: 1.1; max-height: 2.4em; overflow: hidden; }
+        .label-footer { margin-top: auto; border-top: 1px solid #ccc; padding-top: 2px; }
+        .label-price { font-size: 13pt; font-weight: 900; text-align: center; direction: ltr; }
+        .label-importer { font-size: 5pt; text-align: right; }
 
-        /* תצוגה מקדימה של המדבקה */
-        #previewArea {
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-            background-color: #e5e7eb;
-            border-radius: 8px;
-            min-height: 150px;
-            align-items: center;
-        }
-
-        /* עיצוב המדבקה עצמה (פיזי) */
-        .label {
-            width: 30mm;
-            height: 30mm;
-            background-color: white;
-            border: 1px solid black;
-            padding: 2mm;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            overflow: hidden;
-        }
-
-        .label-header {
-            font-size: 9pt;
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-        
-        .label-desc {
-            font-size: 8pt;
-            line-height: 1.1;
-            font-weight: normal;
-            max-height: 22px;
-            overflow: hidden;
-        }
-
-        .label-footer {
-            text-align: left; /* מחיר בצד שמאל */
-            margin-top: auto;
-            border-top: 1px solid #ccc;
-            padding-top: 2px;
-        }
-
-        .label-price {
-            font-size: 12pt;
-            font-weight: 900;
-            text-align: center;
-            direction: ltr; /* כדי שהמספרים לא יתהפכו */
-        }
-
-        .label-importer {
-            font-size: 5pt;
-            text-align: right;
-            line-height: 1;
-            margin-top: 2px;
-            color: #444;
-        }
-
-        .hidden { display: none; }
-
-        /* --- הגדרות הדפסה --- */
         @media print {
             body * { visibility: hidden; }
             #printArea, #printArea * { visibility: visible; }
-            #printArea {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            .label {
-                border: none; /* בהדפסה עדיף בלי גבול שחור */
-                page-break-after: always;
-                margin: 0 auto;
-                box-shadow: none;
-            }
+            #printArea { position: absolute; left: 0; top: 0; }
+            .label { border: none; page-break-after: always; margin: 0; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>מדפסת מדבקות שטח (סאבקו)</h1>
+    <h1>מדפסת מדבקות שטח <span class="version-tag">(גרסה: סורק חיצוני)</span></h1>
     
-    <div id="statusMessage">
-        אנא טען את המחירון שלך כדי להתחיל.
+    <div id="statusMessage">אנא טען מחירון כדי להתחיל.</div>
+
+    <!-- טעינה -->
+    <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+        <h2>1. טעינת מחירון</h2>
+        <div style="display: flex; gap: 10px;">
+            <input type="file" id="jsonFile" accept=".json" style="display:none" onchange="handleFileLoad(event)">
+            <button class="btn-primary" onclick="document.getElementById('jsonFile').click()">📂 בחר קובץ</button>
+            <button class="btn-outline" onclick="loadSampleData()">טען דוגמה</button>
+        </div>
+        <textarea id="jsonInput" rows="1" placeholder="או הדבק JSON כאן" style="display:none"></textarea>
     </div>
 
-    <!-- שלב 1: טעינה -->
-    <div class="section">
-        <h2>1. טעינת מחירון (JSON)</h2>
-        <p style="font-size: 0.85rem; color: #666; margin-top: 0;">
-            העתק את תוכן ה-JSON והדבק אותו כאן, או בחר קובץ.
+    <!-- ביצוע -->
+    <div style="margin-top: 20px;">
+        <h2>2. סריקה והדפסה</h2>
+        
+        <!-- כפתור סריקה חיצונית -->
+        <button id="scanButton" class="btn-primary" disabled onclick="openExternalScanner()">
+            📲 סרוק באפליקציה חיצונית
+        </button>
+        <p style="font-size: 0.8rem; color: #666; text-align: center; margin-top: 5px;">
+            (חובה שתהיה מותקנת אפליקציית Binary Eye או Barcode Scanner)
         </p>
-        
-        <div class="control-group">
-            <!-- כפתור קובץ נסתר -->
-            <input type="file" id="jsonFile" accept=".json" class="hidden" onchange="handleFileLoad(event)">
-            
-            <button class="btn-primary" onclick="document.getElementById('jsonFile').click()">
-                📂 בחר קובץ מהמכשיר
-            </button>
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <input type="text" id="inputSku" placeholder="מק''ט ידני" oninput="updatePreview()">
+            <input type="number" id="inputQuantity" value="1" min="1" placeholder="כמות" style="width: 80px;" oninput="updatePreview()">
         </div>
 
-        <textarea id="jsonInput" rows="3" placeholder="או הדבק כאן טקסט JSON..."></textarea>
-        
-        <div class="control-group" style="margin-top: 10px; justify-content: space-between;">
-            <button class="btn-success" onclick="loadData(document.getElementById('jsonInput').value)">
-                שמור וטען נתונים
-            </button>
-            <button class="btn-link" onclick="loadSampleData()">טען דוגמה</button>
-        </div>
-    </div>
-
-    <!-- שלב 2: ביצוע -->
-    <div class="section">
-        <h2>2. הזנה וביצוע</h2>
-        
-        <div class="control-group">
-            <input type="text" id="inputSku" placeholder="הקלד מק''ט או סרוק ברקוד" oninput="updatePreview()">
-        </div>
-        
-        <div class="control-group">
-            <input type="number" id="inputQuantity" value="1" min="1" placeholder="כמות" oninput="updatePreview()">
-        </div>
-
-        <div class="control-group">
-            <!-- קלט תמונה נסתר -->
-            <input type="file" id="barcodeImageInput" accept="image/*" class="hidden" onchange="handleImageScan(event)">
-            
-            <button id="scanButton" class="btn-primary" disabled onclick="document.getElementById('barcodeImageInput').click()">
-                📷 סרוק ברקוד (צילום תמונה)
-            </button>
-        </div>
-
-        <button id="printButton" class="btn-danger" disabled onclick="printLabels()" style="width: 100%; margin-top: 10px;">
+        <button id="printButton" class="btn-danger" disabled onclick="printLabels()" style="margin-top: 15px;">
             🖨️ הדפס מדבקות
         </button>
-        <p style="font-size: 0.8rem; text-align: center; color: #666; margin-bottom: 0;">
-            (למשתמשי Niimbot B21: כפתור זה לא עובד ישירות, יש לייצא תמונה)
-        </p>
     </div>
 
-    <!-- תצוגה מקדימה -->
-    <div class="section">
+    <!-- תצוגה -->
+    <div style="margin-top: 20px;">
         <h2>3. תצוגה מקדימה</h2>
-        <div id="previewArea">
-            <span style="color: #999;">המדבקה תופיע כאן...</span>
-        </div>
+        <div id="previewArea"><span style="color: #888;">המדבקה תופיע כאן...</span></div>
     </div>
 </div>
 
-<!-- אזור הדפסה נסתר -->
 <div id="printArea"></div>
 
 <script>
-    // --- לוגיקה ---
     let priceMap = new Map();
-    const IMPORTER_INFO = {
-        importer: "יבואן: סאבקו אספקה טכנית בע\"מ",
-        address: "כתובת: חוצות היוצר 13 אשקלון",
-        manufacturer: "יצרן: טרופר",
-        country: "ארץ ייצור: סין"
-    };
+    const IMPORTER_INFO = { lines: ["יבואן: סאבקו אספקה טכנית בע\"מ", "כתובת: חוצות היוצר 13 אשקלון", "יצרן: טרופר | ארץ ייצור: סין"] };
 
     function setStatus(msg, type) {
         const el = document.getElementById('statusMessage');
         el.textContent = msg;
-        el.className = type; // success / error
+        el.className = type || '';
     }
 
     function loadData(jsonString) {
-        if (!jsonString || !jsonString.trim()) return;
+        if (!jsonString) return;
         try {
             const data = JSON.parse(jsonString);
-            if (!Array.isArray(data)) throw new Error("לא מערך תקין");
-            
+            if (!Array.isArray(data)) throw new Error("פורמט שגוי");
             priceMap.clear();
             data.forEach(item => {
                 if (item.sku) {
@@ -333,131 +123,78 @@
                     if (item.barcode) priceMap.set(String(item.barcode).trim(), item);
                 }
             });
-
             localStorage.setItem('priceMapJSON', jsonString);
-            setStatus(`✅ נטען בהצלחה: ${priceMap.size} פריטים.`, 'success');
-            
+            setStatus(`✅ נטען: ${priceMap.size} פריטים`, 'success');
             document.getElementById('scanButton').disabled = false;
             document.getElementById('printButton').disabled = false;
-            document.getElementById('jsonInput').value = ''; // נקה
-        } catch (e) {
-            setStatus(`❌ שגיאה בנתונים: ${e.message}`, 'error');
-        }
+        } catch (e) { setStatus('שגיאה בנתונים', 'error'); }
+    }
+
+    function handleFileLoad(e) {
+        const reader = new FileReader();
+        reader.onload = (ev) => loadData(ev.target.result);
+        reader.readAsText(e.target.files[0]);
     }
 
     function loadSampleData() {
-        const sample = `[
-            {"sku": "10235", "description": "מרסס פרחים משאבה 2 ליטר", "price": 61, "barcode": "7290000102358"},
-            {"sku": "2587A", "description": "מפתח שוודי 12 אינץ", "price": 125.5, "barcode": "123456"}
-        ]`;
-        loadData(sample);
+        loadData(`[{"sku": "10235", "description": "מרסס פרחים 2 ליטר", "price": 61, "barcode": "7290000102358"}]`);
     }
 
-    function handleFileLoad(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => loadData(e.target.result);
-        reader.readAsText(file);
+    // --- סורק חיצוני ---
+    function openExternalScanner() {
+        const currentUrl = window.location.href.split('?')[0];
+        const returnUrl = encodeURIComponent(currentUrl + '?code={CODE}');
+        window.location.href = 'zxing://scan/?ret=' + returnUrl;
     }
 
-    // יצירת HTML של מדבקה
+    function checkScanResult() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const scannedCode = urlParams.get('code');
+        if (scannedCode) {
+            const cleanCode = scannedCode.trim().toUpperCase();
+            document.getElementById('inputSku').value = cleanCode;
+            setTimeout(() => {
+                const item = priceMap.get(cleanCode);
+                if (item) {
+                    setStatus(`✅ נסרק: ${item.description}`, 'success');
+                    updatePreview();
+                } else {
+                    setStatus(`⚠️ ברקוד ${cleanCode} לא נמצא`, 'error');
+                    updatePreview();
+                }
+            }, 100);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
     function createLabelHTML(item) {
         if (!item) return '';
-        const priceFixed = item.price ? item.price.toFixed(2) : "0.00";
-        
-        return `
-        <div class="label">
-            <div>
-                <div class="label-header">מק"ט: ${item.sku}</div>
-                <div class="label-desc">${item.description || ''}</div>
-            </div>
-            
-            <div class="label-footer">
-                <div class="label-price">₪${priceFixed}</div>
-                <div class="label-importer">
-                    ${IMPORTER_INFO.importer}<br>
-                    ${IMPORTER_INFO.address}<br>
-                    ${IMPORTER_INFO.manufacturer} | ${IMPORTER_INFO.country}
-                </div>
-            </div>
-        </div>`;
+        return `<div class="label"><div><div class="label-header">מק"ט: ${item.sku}</div><div class="label-desc">${item.description}</div></div><div class="label-footer"><div class="label-price">₪${item.price.toFixed(2)}</div><div class="label-importer">${IMPORTER_INFO.lines.join('<br>')}</div></div></div>`;
     }
 
     function updatePreview() {
         const key = document.getElementById('inputSku').value.trim().toUpperCase();
         const container = document.getElementById('previewArea');
-        
-        if (!key) {
-            container.innerHTML = '<span style="color: #999;">המתנה לקלט...</span>';
-            return;
-        }
-
         const item = priceMap.get(key);
-        if (item) {
-            container.innerHTML = createLabelHTML(item);
-            setStatus(`פריט נמצא: ${item.description}`, 'success');
-        } else {
-            container.innerHTML = '<span style="color: red;">לא נמצא במחירון</span>';
-            setStatus(`לא נמצא: ${key}`, 'error');
-        }
+        container.innerHTML = item ? createLabelHTML(item) : '<span style="color:red">לא נמצא</span>';
     }
 
     function printLabels() {
         const key = document.getElementById('inputSku').value.trim().toUpperCase();
         const qty = parseInt(document.getElementById('inputQuantity').value) || 1;
         const item = priceMap.get(key);
-        
-        if (!item) { alert('לא נמצא פריט להדפסה'); return; }
-        
+        if (!item) { alert('אין מוצר'); return; }
         let html = '';
         for(let i=0; i<qty; i++) html += createLabelHTML(item);
-        
-        const printArea = document.getElementById('printArea');
-        printArea.innerHTML = html;
+        document.getElementById('printArea').innerHTML = html;
         window.print();
     }
 
-    // --- סריקת תמונה ---
-    function handleImageScan(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        setStatus('🔄 מפענח תמונה...', 'success');
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                
-                const imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
-                // ניסיון סריקה עם jsQR (QR בלבד בברירת מחדל, אבל זה מה יש ללא שרת)
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-                
-                if (code) {
-                    document.getElementById('inputSku').value = code.data;
-                    updatePreview();
-                    setStatus(`✅ ברקוד זוהה: ${code.data}`, 'success');
-                } else {
-                    setStatus('❌ לא זוהה ברקוד ברור בתמונה. נסה לקרב.', 'error');
-                }
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // טעינה ראשונית
     window.onload = () => {
         const saved = localStorage.getItem('priceMapJSON');
         if (saved) loadData(saved);
+        checkScanResult();
     };
 </script>
-
 </body>
 </html>
