@@ -11,28 +11,26 @@
         :root { --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; direction: rtl; }
         .container { max-width: 600px; margin: 0 auto; background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: var(--primary); margin-top: 0; }
+        h1 { text-align: center; color: var(--primary); margin-top: 0; font-size: 1.6rem; }
         
         /* כפתורים */
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; color: white; margin-top: 8px; }
-        .btn-live { background: #2563eb; } /* כחול */
-        .btn-app { background: #7c3aed; } /* סגול */
-        .btn-img { background: #059669; } /* ירוק */
-        .btn-print { background: #dc2626; margin-top: 20px; } /* אדום */
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; color: white; margin-top: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        button:active { transform: translateY(2px); }
+        .btn-live { background: #2563eb; } 
+        .btn-app { background: #7c3aed; border: 2px solid #6d28d9; } 
+        .btn-img { background: #059669; } 
+        .btn-print { background: #dc2626; margin-top: 20px; font-size: 1.2rem; } 
         
         input { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1.1rem; }
         
         #statusMessage { padding: 10px; text-align: center; background: #e0f2fe; border-radius: 8px; margin-bottom: 15px; }
         .success { background: #dcfce7 !important; color: #166534; }
         
-        /* אזור סורק חי */
-        #reader { width: 100%; display: none; margin-bottom: 10px; border: 2px solid #2563eb; border-radius: 8px; }
+        #reader { width: 100%; display: none; margin-bottom: 10px; border: 4px solid #2563eb; border-radius: 8px; }
         
-        /* תצוגה מקדימה */
-        .label { border: 1px solid black; padding: 10px; background: white; margin-top: 15px; }
+        .label { border: 2px solid black; padding: 10px; background: white; margin-top: 15px; }
         .label-price { font-size: 1.5rem; font-weight: bold; direction: ltr; text-align: center; }
 
-        /* הסתרת אלמנטים בהדפסה */
         @media print { body * { visibility: hidden; } #printArea, #printArea * { visibility: visible; } #printArea { position: absolute; left: 0; top: 0; } .label { border: none; page-break-after: always; } }
     </style>
 </head>
@@ -42,40 +40,41 @@
     <h1>מדפסת מדבקות (סאבקו)</h1>
     <div id="statusMessage">אנא טען מחירון</div>
 
-    <!-- טעינה -->
     <div style="background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 8px;">
         <input type="file" id="jsonFile" accept=".json" style="display:none" onchange="handleFileLoad(event)">
-        <button onclick="document.getElementById('jsonFile').click()" style="background:#6b7280">📂 טען קובץ מחירון</button>
-        <button onclick="loadSampleData()" style="background:transparent; color:#6b7280; border:1px solid #ccc; margin-top:5px;">טען דוגמה לבדיקה</button>
+        <button onclick="document.getElementById('jsonFile').click()" style="background:#6b7280; font-size: 0.9rem;">📂 טען קובץ מחירון</button>
+        <button onclick="loadSampleData()" style="background:transparent; color:#6b7280; border:1px solid #ccc; margin-top:5px; font-size: 0.8rem; box-shadow:none;">טען דוגמה לבדיקה</button>
     </div>
 
-    <!-- כפתורי סריקה - 3 אפשרויות -->
     <div style="margin-top: 20px;">
         <h3>בחר שיטת סריקה:</h3>
         
-        <!-- אפשרות 1: סורק חי -->
+        <!-- כפתור 1: סורק חי -->
         <div id="reader"></div>
         <button class="btn-live" onclick="startLiveScan()">📷 1. סורק חי (מומלץ)</button>
         <button id="stopScanBtn" onclick="stopLiveScan()" style="display:none; background:#4b5563;">עצור סורק</button>
 
-        <!-- אפשרות 2: אפליקציה חיצונית -->
+        <!-- כפתור 2: אפליקציה חיצונית עם תיקון -->
         <button class="btn-app" onclick="scanWithApp()">📲 2. אפליקציית "Binary Eye"</button>
+        <p style="font-size: 0.75rem; text-align: center; color: #666; margin-top: 2px;">אם לא מותקן, זה יעביר אותך לחנות</p>
 
-        <!-- אפשרות 3: צילום תמונה -->
+        <!-- כפתור 3: תמונה -->
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="scanFromImage(event)">
         <button class="btn-img" onclick="document.getElementById('cameraInput').click()">🖼️ 3. צלם תמונה ופענח</button>
     </div>
 
-    <!-- תוצאות -->
     <div style="margin-top: 20px; border-top: 2px solid #eee; padding-top: 10px;">
-        <label>מק"ט / ברקוד:</label>
-        <input type="text" id="inputSku" oninput="updatePreview()">
-        
-        <label>כמות:</label>
-        <input type="number" id="inputQuantity" value="1" style="width: 80px;" oninput="updatePreview()">
-
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 2;">
+                <label>מק"ט:</label>
+                <input type="text" id="inputSku" oninput="updatePreview()">
+            </div>
+            <div style="flex: 1;">
+                <label>כמות:</label>
+                <input type="number" id="inputQuantity" value="1" oninput="updatePreview()">
+            </div>
+        </div>
         <div id="previewArea"></div>
-
         <button class="btn-print" onclick="printLabels()">🖨️ הדפס מדבקות</button>
     </div>
 </div>
@@ -93,35 +92,40 @@
         el.className = type || '';
     }
 
-    // 1. סריקה חיה (html5-qrcode)
+    // 1. סריקה חיה
     function startLiveScan() {
         document.getElementById('reader').style.display = 'block';
         document.getElementById('stopScanBtn').style.display = 'inline-block';
-        
         html5QrcodeScanner = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-        
-        html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
-            handleScanResult(decodedText);
-            stopLiveScan();
-        }).catch(err => {
-            alert("המצלמה לא נפתחה. וודא שאתה ב-Chrome ונתת אישור.");
-            stopLiveScan();
-        });
+        html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, 
+            (decodedText) => { handleScanResult(decodedText); stopLiveScan(); })
+        .catch(err => { alert("המצלמה לא נפתחה. וודא אישור בדפדפן."); stopLiveScan(); });
     }
 
     function stopLiveScan() {
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear());
-        }
+        if (html5QrcodeScanner) html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear());
         document.getElementById('reader').style.display = 'none';
         document.getElementById('stopScanBtn').style.display = 'none';
     }
 
-    // 2. סריקה באפליקציה חיצונית
+    // 2. סריקה חיצונית (משופר עם הפניה לחנות)
     function scanWithApp() {
         const returnUrl = encodeURIComponent(window.location.href.split('?')[0] + '?code={CODE}');
-        window.location.href = 'zxing://scan/?ret=' + returnUrl;
+        const intentUrl = 'zxing://scan/?ret=' + returnUrl;
+        
+        // מנסה לפתוח את האפליקציה
+        window.location.href = intentUrl;
+
+        // אם לא קרה כלום תוך 1.5 שניות, סימן שאין אפליקציה - פתח חנות
+        setTimeout(function() {
+            // בדיקה האם המשתמש עדיין באותו עמוד (כלומר, האפליקציה לא נפתחה)
+            if (document.hidden) return; // אם העמוד מוסתר, סימן שהאפליקציה נפתחה
+            
+            const confirmDownload = confirm("נראה שאפליקציית הסורק לא מותקנת. להוריד אותה עכשיו?");
+            if (confirmDownload) {
+                window.location.href = "https://play.google.com/store/apps/details?id=de.markusfisch.android.binaryeye";
+            }
+        }, 1500);
     }
 
     // 3. סריקה מתמונה
@@ -129,32 +133,20 @@
         const file = e.target.files[0];
         if (!file) return;
         setStatus("מפענח תמונה...", "");
-        
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.scanFile(file, true)
             .then(decodedText => handleScanResult(decodedText))
-            .catch(err => {
-                setStatus("❌ לא נמצא ברקוד. נסה לקרב את המצלמה.", "error");
-                alert("לא הצלחנו לזהות ברקוד בתמונה. נסה שוב.");
-            });
+            .catch(err => setStatus("❌ לא זוהה ברקוד.", "error"));
     }
 
-    // טיפול בתוצאה
     function handleScanResult(code) {
         const cleanCode = code.trim().toUpperCase();
         document.getElementById('inputSku').value = cleanCode;
-        
         const item = priceMap.get(cleanCode);
-        if (item) {
-            setStatus(`✅ מוצר נמצא: ${item.description}`, 'success');
-            updatePreview();
-        } else {
-            setStatus(`⚠️ ברקוד ${cleanCode} לא נמצא במחירון`, 'error');
-            updatePreview();
-        }
+        if (item) { setStatus(`✅ מוצר נמצא: ${item.description}`, 'success'); updatePreview(); }
+        else { setStatus(`⚠️ ברקוד ${cleanCode} לא נמצא`, 'error'); updatePreview(); }
     }
 
-    // בדיקה אם חזרנו מאפליקציה חיצונית
     function checkUrlForCode() {
         const params = new URLSearchParams(window.location.search);
         if (params.get('code')) {
@@ -163,7 +155,6 @@
         }
     }
 
-    // נתונים ותצוגה
     function loadData(json) {
         try {
             const data = JSON.parse(json);
@@ -225,6 +216,5 @@
         checkUrlForCode();
     };
 </script>
-
 </body>
 </html>
