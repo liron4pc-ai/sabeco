@@ -1,453 +1,426 @@
-<!--
-    מערכת הדפסת מדבקות שטח עבור יבואני כלי עבודה - גרסת תיקון בעיות סריקה וקבצים.
-    שיטת הסריקה הוחלפה לטעינת תמונה (פתיחה וצילום באמצעות המצלמה/גלריה) כדי לעקוף חסימות אבטחה של קבצים מקומיים.
-    הקוד כולל: טעינת JSON מקובץ/טקסט, שמירת נתונים ב-localStorage, תבנית מדבקה מלאה.
-    הספריות הנדרשות נטענות מהאינטרנט.
--->
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מדפסת מדבקות שטח (סאבקו)</title>
-    <!-- טעינת Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- טעינת ספריית סריקת ברקוד קלה (jsQR) -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.0.0/dist/jsQR.js"></script>
-    <style>
-        /* הגדרות כלליות */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
-            direction: rtl;
-            padding: 10px;
-        }
+<!--מערכת הדפסת מדבקות שטח עבור יבואני כלי עבודה - גרסה סופית להעלאה לשרת HTTPS.הקוד כולל:1. טעינת מחירון מקובץ/טקסט ושמירה אוטומטית (localStorage).2. סריקת ברקוד באמצעות צילום תמונה (Image Scan) כדי לעקוף חסימות מצלמה.3. תבנית מדבקה מלאה עם פרטי היבואן (סאבקו).שים לב: קוד זה חייב לרוץ משרת HTTPS (כמו GitHub Pages) כדי שפיצ&#39;ר הסריקה יעבוד.
+--><html lang="he" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>מדפסת מדבקות שטח (סאבקו)</title><!-- טעינת Tailwind CSS --><script src="https://www.google.com/search?q=https://cdn.tailwindcss.com"></script><!-- טעינת ספריית סריקת ברקוד קלה (jsQR) - עבור קודי QR בעיקר --><script src="https://www.google.com/search?q=https://cdn.jsdelivr.net/npm/jsqr%401.0.0/dist/jsQR.js"></script><style>/* הגדרות כלליות */body {font-family: 'Inter', sans-serif;background-color: #f0f4f8;direction: rtl;padding: 10px;}    /* עיצוב המדבקה לתצוגה ולהדפסה */
+    .label-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .label {
+        /* 30mm x 30mm בתוספת padding קטן */
+        width: 30mm;
+        height: 30mm;
+        padding: 2mm;
+        border: 1px solid #000;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background-color: white;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    }
 
-        /* עיצוב המדבקה לתצוגה ולהדפסה */
-        .label-container {
+    /* הגדרות הדפסה מיוחדות */
+    @media print {
+        /* הסתרת כל האלמנטים שאינם מדבקה */
+        body > *:not(.print-area) { display: none !important; }
+        .print-area {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
+            flex-wrap: wrap;
+            width: 100%;
+            margin: 0;
         }
         .label {
-            /* 30mm x 30mm בתוספת padding קטן */
-            width: 30mm;
-            height: 30mm;
+            /* הגדרת גודל המדבקה המדויק לדף הדפסה */
+            width: 30mm !important;
+            height: 30mm !important;
+            border: none;
+            box-shadow: none;
+            /* חיתוך אוטומטי במדפסות גליל */
+            page-break-after: always;
+            margin: 0;
             padding: 2mm;
-            border: 1px solid #000;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            background-color: white;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
         }
-
-        /* הגדרות הדפסה מיוחדות */
-        @media print {
-            /* הסתרת כל האלמנטים שאינם מדבקה */
-            body > *:not(.print-area) { display: none !important; }
-            .print-area {
-                display: flex;
-                flex-wrap: wrap;
-                width: 100%;
-                margin: 0;
-            }
-            .label {
-                /* הגדרת גודל המדבקה המדויק לדף הדפסה */
-                width: 30mm !important;
-                height: 30mm !important;
-                border: none;
-                box-shadow: none;
-                /* חיתוך אוטומטי במדפסות גליל */
-                page-break-after: always;
-                margin: 0;
-                padding: 2mm;
-            }
-            .label:last-child {
-                page-break-after: avoid;
-            }
+        .label:last-child {
+            page-break-after: avoid;
         }
+    }
 
-        /* עיצוב ספציפי לטקסט בתוך המדבקה */
-        .sku-text { font-size: 8pt; font-weight: 600; }
-        .description-text { font-size: 7.5pt; font-weight: 500; line-height: 1.1; overflow: hidden; max-height: 2.2em; }
-        .price-box { font-size: 14pt; font-weight: 900; color: #000; line-height: 1; }
-        .importer-text { font-size: 5pt; line-height: 1.1; overflow: hidden; max-height: 3.3em; margin-top: 1px; }
+    /* עיצוב ספציפי לטקסט בתוך המדבקה */
+    .sku-text { font-size: 8pt; font-weight: 600; }
+    .description-text { font-size: 7.5pt; font-weight: 500; line-height: 1.1; overflow: hidden; max-height: 2.2em; }
+    .price-box { font-size: 14pt; font-weight: 900; color: #000; line-height: 1; }
+    .importer-text { font-size: 5pt; line-height: 1.1; overflow: hidden; max-height: 3.3em; margin-top: 1px; }
 
-    </style>
-</head>
-<body>
+</style>
+</head><body><div id="app" class="max-w-md mx-auto p-4 bg-white rounded-xl shadow-2xl">
+    <h1 class="text-2xl font-bold text-center mb-6 text-indigo-700">מדפסת מדבקות שטח (סאבקו)</h1>
 
-    <div id="app" class="max-w-md mx-auto p-4 bg-white rounded-xl shadow-2xl">
-        <h1 class="text-2xl font-bold text-center mb-6 text-indigo-700">מדפסת מדבקות שטח (סאבקו)</h1>
+    <!-- הודעות סטטוס -->
+    <div id="statusMessage" class="mb-4 text-center p-3 rounded-lg border">
+        אנא טען את המחירון שלך כדי להתחיל.
+    </div>
 
-        <!-- הודעות סטטוס -->
-        <div id="statusMessage" class="mb-4 text-center p-3 rounded-lg border">
-            אנא טען את המחירון שלך כדי להתחיל.
-        </div>
-
-        <!-- 1. טעינת מחירון -->
-        <div class="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-200">
-            <h2 class="text-lg font-semibold mb-3 text-gray-800">1. טעינת מחירון (JSON)</h2>
-            <p class="text-xs text-gray-500 mb-2">
-                הקפד להשתמש בכותרות: <span class="font-mono bg-gray-200 p-1 rounded">sku, description, price, barcode</span>. הנתונים נשמרים אוטומטית במכשיר.
-            </p>
-            
-            <!-- טעינת קובץ JSON -->
-            <div class="flex items-center space-x-2 mb-3">
-                <input type="file" id="jsonFile" accept=".json" class="hidden" onchange="handleFileLoad(event)">
-                <button onclick="document.getElementById('jsonFile').click()" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                    בחר קובץ מחירון JSON מהמכשיר
-                </button>
-                <button onclick="loadData(document.getElementById('jsonInput').value)" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                    טען טקסט ידני ושמור
-                </button>
-            </div>
-            
-            <textarea id="jsonInput" rows="5" placeholder="הדבק כאן את טקסט ה-JSON המלא שהומר מהאקסל..." class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
-
-            <button onclick="loadSampleData()" class="mt-2 text-sm text-indigo-500 hover:text-indigo-700 font-semibold transition duration-300">טען דוגמת מחירון מהירה</button>
-        </div>
-
-        <!-- 2. הזמנה והדפסה -->
-        <div class="bg-white p-4 rounded-xl shadow-md border border-indigo-200">
-            <h2 class="text-lg font-semibold mb-3 text-gray-800">2. הזנה וביצוע</h2>
-            <div class="grid grid-cols-1 gap-4">
-                
-                <input type="text" id="inputSku" oninput="updatePreview()" placeholder="מק''ט / ברקוד" class="p-3 border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg">
-
-                <input type="number" id="inputQuantity" oninput="updatePreview()" value="1" min="1" placeholder="כמות מדבקות" class="p-3 border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg">
-
-                <!-- קלט נסתר לטעינת תמונה מהמצלמה/גלריה -->
-                <input type="file" id="barcodeImageInput" accept="image/*" class="hidden" onchange="handleImageScan(event)">
-
-                <button onclick="document.getElementById('barcodeImageInput').click()" id="scanButton" disabled class="bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-indigo-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 inline-block mr-2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.125 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.125 9.375v-4.5ZM13.125 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5Z" />
-                    </svg>
-                    סרוק ברקוד (צילום תמונה)
-                </button>
-            </div>
-            
-            <button onclick="printLabels()" id="printButton" disabled class="w-full bg-red-600 text-white font-black text-xl py-3 px-4 rounded-lg shadow-xl hover:bg-red-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-4">
-                הדפס מדבקות (עבור מדפסות תעשייתיות)
+    <!-- 1. טעינת מחירון -->
+    <div class="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-200">
+        <h2 class="text-lg font-semibold mb-3 text-gray-800">1. טעינת מחירון (JSON)</h2>
+        <p class="text-xs text-gray-500 mb-2">
+            הקפד להשתמש בכותרות: <span class="font-mono bg-gray-200 p-1 rounded">sku, description, price, barcode</span>. הנתונים נשמרים אוטומטית במכשיר.
+        </p>
+        
+        <!-- טעינת קובץ JSON -->
+        <div class="flex items-center space-x-2 mb-3">
+            <input type="file" id="jsonFile" accept=".json" class="hidden" onchange="handleFileLoad(event)">
+            <button onclick="document.getElementById('jsonFile').click()" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                בחר קובץ מחירון JSON מהמכשיר
             </button>
-            <p class="text-xs text-center text-gray-500 mt-2">
-                לתשומת לבך: אם אתה משתמש במדפסת Niimbot B21, כפתור זה לא יעבוד ישירות.
-            </p>
+            <button onclick="loadData(document.getElementById('jsonInput').value)" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                טען טקסט ידני ושמור
+            </button>
         </div>
+        
+        <textarea id="jsonInput" rows="5" placeholder="הדבק כאן את טקסט ה-JSON המלא שהומר מהאקסל..." class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
 
-        <!-- 3. תצוגה מקדימה -->
-        <div class="mt-8">
-            <h2 class="text-lg font-semibold mb-3 text-gray-800 text-center">3. תצוגה מקדימה</h2>
-            <div id="previewArea" class="label-container justify-center items-center">
-                <div class="text-center text-gray-400 p-4 border border-dashed rounded-lg">
-                    המדבקה תוצג כאן לאחר הזנת מק"ט וכמות.
-                </div>
+        <button onclick="loadSampleData()" class="mt-2 text-sm text-indigo-500 hover:text-indigo-700 font-semibold transition duration-300">טען דוגמת מחירון מהירה</button>
+    </div>
+
+    <!-- 2. הזמנה והדפסה -->
+    <div class="bg-white p-4 rounded-xl shadow-md border border-indigo-200">
+        <h2 class="text-lg font-semibold mb-3 text-gray-800">2. הזנה וביצוע</h2>
+        <div class="grid grid-cols-1 gap-4">
+            
+            <input type="text" id="inputSku" oninput="updatePreview()" placeholder="מק''ט / ברקוד" class="p-3 border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg">
+
+            <input type="number" id="inputQuantity" oninput="updatePreview()" value="1" min="1" placeholder="כמות מדבקות" class="p-3 border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg">
+
+            <!-- קלט נסתר לטעינת תמונה מהמצלמה/גלריה -->
+            <input type="file" id="barcodeImageInput" accept="image/*" class="hidden" onchange="handleImageScan(event)">
+
+            <button onclick="document.getElementById('barcodeImageInput').click()" id="scanButton" disabled class="bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-indigo-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 inline-block mr-2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.125 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.125 9.375v-4.5ZM13.125 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5Z" />
+                </svg>
+                סרוק ברקוד (צילום תמונה)
+            </button>
+        </div>
+        
+        <button onclick="printLabels()" id="printButton" disabled class="w-full bg-red-600 text-white font-black text-xl py-3 px-4 rounded-lg shadow-xl hover:bg-red-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-4">
+            הדפס מדבקות (עבור מדפסות תעשייתיות)
+        </button>
+        <p class="text-xs text-center text-gray-500 mt-2">
+            לתשומת לבך: אם אתה משתמש במדפסת Niimbot B21, כפתור זה לא יעבוד ישירות.
+        </p>
+    </div>
+
+    <!-- 3. תצוגה מקדימה -->
+    <div class="mt-8">
+        <h2 class="text-lg font-semibold mb-3 text-gray-800 text-center">3. תצוגה מקדימה</h2>
+        <div id="previewArea" class="label-container justify-center items-center">
+            <div class="text-center text-gray-400 p-4 border border-dashed rounded-lg">
+                המדבקה תוצג כאן לאחר הזנת מק"ט וכמות.
             </div>
         </div>
     </div>
+</div>
 
-    <!-- אזור הדפסה בפועל (מוסתר) -->
-    <div id="printArea" class="print-area absolute top-0 left-0 hidden"></div>
+<!-- אזור הדפסה בפועל (מוסתר) -->
+<div id="printArea" class="print-area absolute top-0 left-0 hidden"></div>
 
-    <script>
-        // מפה לשמירת נתוני המחירון (גישה מהירה לפי SKU/ברקוד)
-        let priceMap = new Map();
+<script>
+    // מפה לשמירת נתוני המחירון (גישה מהירה לפי SKU/ברקוד)
+    let priceMap = new Map();
+    
+    // פרטי היבואן הקבועים (מעודכן לפי בקשתך)
+    const IMPORTER_INFO = {
+        importer: "יבואן: סאבקו אספקה טכנית בע\"מ",
+        address: "כתובת: חוצות היוצר 13 אשקלון",
+        manufacturer: "יצרן: טרופר",
+        country: "ארץ ייצור: סין"
+    };
+    
+    // --- פונקציות טעינת נתונים ---
+
+    /**
+     * מטעין את נתוני המחירון משדה טקסט או קובץ, שומר ב-localStorage ומעדכן את המפה.
+     * @param {string} jsonString - המחרוזת JSON לטעינה.
+     */
+    function loadData(jsonString) {
+        const statusMessage = document.getElementById('statusMessage');
+        const jsonInput = document.getElementById('jsonInput');
         
-        // פרטי היבואן הקבועים (מעודכן לפי בקשתך)
-        const IMPORTER_INFO = {
-            importer: "יבואן: סאבקו אספקה טכנית בע\"מ",
-            address: "כתובת: חוצות היוצר 13 אשקלון",
-            manufacturer: "יצרן: טרופר",
-            country: "ארץ ייצור: סין"
-        };
-        
-        // --- פונקציות טעינת נתונים ---
+        if (!jsonString || jsonString.trim() === '') {
+            statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-yellow-500 bg-yellow-100 text-yellow-800';
+            statusMessage.textContent = '⚠️ שדה הטקסט ריק. לא בוצעה טעינה.';
+            return;
+        }
 
-        /**
-         * מטעין את נתוני המחירון משדה טקסט או קובץ, שומר ב-localStorage ומעדכן את המפה.
-         * @param {string} jsonString - המחרוזת JSON לטעינה.
-         */
-        function loadData(jsonString) {
-            const statusMessage = document.getElementById('statusMessage');
-            const jsonInput = document.getElementById('jsonInput');
-            
-            if (!jsonString || jsonString.trim() === '') {
-                statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-yellow-500 bg-yellow-100 text-yellow-800';
-                statusMessage.textContent = '⚠️ שדה הטקסט ריק. לא בוצעה טעינה.';
-                return;
+        try {
+            const data = JSON.parse(jsonString);
+            if (!Array.isArray(data)) {
+                 throw new Error("JSON אינו מערך.");
             }
 
-            try {
-                const data = JSON.parse(jsonString);
-                if (!Array.isArray(data)) {
-                     throw new Error("JSON אינו מערך.");
-                }
+            priceMap.clear();
+            data.forEach(item => {
+                // ודא שלפחות SKU ותיאור קיימים
+                if (item.sku && item.description) {
+                    // הופך את המחיר למספר
+                    item.price = parseFloat(item.price);
 
-                priceMap.clear();
-                data.forEach(item => {
-                    // ודא שלפחות SKU ותיאור קיימים
-                    if (item.sku && item.description) {
-                        // הופך את המחיר למספר
-                        item.price = parseFloat(item.price);
-
-                        // 1. הוספה לאינדקס לפי SKU
-                        priceMap.set(String(item.sku).trim(), item);
-                        
-                        // 2. הוספה לאינדקס לפי ברקוד (אם קיים)
-                        if (item.barcode) {
-                            priceMap.set(String(item.barcode).trim(), item);
-                        }
+                    // 1. הוספה לאינדקס לפי SKU
+                    priceMap.set(String(item.sku).trim(), item);
+                    
+                    // 2. הוספה לאינדקס לפי ברקוד (אם קיים)
+                    if (item.barcode) {
+                        priceMap.set(String(item.barcode).trim(), item);
                     }
-                });
+                }
+            });
 
-                // שמירה ב-localStorage רק אם נטען בהצלחה
-                localStorage.setItem('priceMapJSON', jsonString);
-                
-                // עדכון סטטוס
-                statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-green-500 bg-green-100 text-green-800';
-                statusMessage.textContent = `✅ המחירון נטען בהצלחה! ${priceMap.size} פריטים במערכת.`;
-                
-                // הפעלת כפתורי הפעולה
-                document.getElementById('scanButton').disabled = false;
-                document.getElementById('printButton').disabled = false;
-                jsonInput.value = ''; // ניקוי שדה הקלט לאחר טעינה מוצלחת
-                
-            } catch (error) {
-                statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-red-500 bg-red-100 text-red-800';
-                statusMessage.textContent = `❌ שגיאת טעינת JSON: אנא ודא שהקובץ תקין. פרטי השגיאה: ${error.message}`;
-            }
+            // שמירה ב-localStorage רק אם נטען בהצלחה
+            localStorage.setItem('priceMapJSON', jsonString);
+            
+            // עדכון סטטוס
+            statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-green-500 bg-green-100 text-green-800';
+            statusMessage.textContent = `✅ המחירון נטען בהצלחה! ${priceMap.size} פריטים במערכת.`;
+            
+            // הפעלת כפתורי הפעולה
+            document.getElementById('scanButton').disabled = false;
+            document.getElementById('printButton').disabled = false;
+            jsonInput.value = ''; // ניקוי שדה הקלט לאחר טעינה מוצלחת
+            
+        } catch (error) {
+            statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-red-500 bg-red-100 text-red-800';
+            statusMessage.textContent = `❌ שגיאת טעינת JSON: אנא ודא שהקובץ תקין. פרטי השגיאה: ${error.message}`;
         }
+    }
 
-        /**
-         * טוען נתונים לדוגמה ומעדכן את המערכת.
-         */
-        function loadSampleData() {
-            const sampleJson = `[
-                {"sku": "10235", "description": "מרסס פרחים משאבה 2 ליטר", "price": "61.00", "barcode": "7290000102358"},
-                {"sku": "1567", "description": "מברגה נטענת 18V עם זוג סוללות", "price": "499.00", "barcode": "7290000156701"},
-                {"sku": "8020", "description": "מפתח שוודי מתכוונן 10 אינץ' מפלדה", "price": "75.00", "barcode": "7290000802011"}
-            ]`;
-            document.getElementById('jsonInput').value = sampleJson;
-            loadData(sampleJson);
-        }
+    /**
+     * טוען נתונים לדוגמה ומעדכן את המערכת.
+     */
+    function loadSampleData() {
+        const sampleJson = `[
+            {"sku": "10235", "description": "מרסס פרחים משאבה 2 ליטר", "price": "61.00", "barcode": "7290000102358"},
+            {"sku": "1567", "description": "מברגה נטענת 18V עם זוג סוללות", "price": "499.00", "barcode": "7290000156701"},
+            {"sku": "8020", "description": "מפתח שוודי מתכוונן 10 אינץ' מפלדה", "price": "75.00", "barcode": "7290000802011"}
+        ]`;
+        document.getElementById('jsonInput').value = sampleJson;
+        loadData(sampleJson);
+    }
 
-        /**
-         * קורא קובץ JSON שנבחר על ידי המשתמש.
-         * @param {Event} event - אירוע בחירת הקובץ.
-         */
-        function handleFileLoad(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+    /**
+     * קורא קובץ JSON שנבחר על ידי המשתמש.
+     * @param {Event} event - אירוע בחירת הקובץ.
+     */
+    function handleFileLoad(event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                loadData(e.target.result); // קורא את התוכן הטקסטואלי ושולח ל-loadData
-            };
-            reader.onerror = () => {
-                const statusMessage = document.getElementById('statusMessage');
-                statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-red-500 bg-red-100 text-red-800';
-                statusMessage.textContent = '❌ שגיאה בקריאת הקובץ.';
-            };
-            reader.readAsText(file);
-        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            loadData(e.target.result); // קורא את התוכן הטקסטואלי ושולח ל-loadData
+        };
+        reader.onerror = () => {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-red-500 bg-red-100 text-red-800';
+            statusMessage.textContent = '❌ שגיאה בקריאת הקובץ.';
+        };
+        reader.readAsText(file);
+    }
 
 
-        // --- פונקציות תצוגה והדפסה ---
+    // --- פונקציות תצוגה והדפסה ---
 
-        /**
-         * מחולל את HTML של מדבקה בודדת.
-         * @param {Object} item - אובייקט הפריט (sku, description, price).
-         * @returns {string} - מחרוזת HTML של המדבקה.
-         */
-        function createLabelHTML(item) {
-            // הוספת toFixed(2) כדי לוודא שמוצגות שתי ספרות אחרי הנקודה גם למחיר עגול
-            const price = item.price.toFixed(2); 
+    /**
+     * מחולל את HTML של מדבקה בודדת.
+     * @param {Object} item - אובייקט הפריט (sku, description, price).
+     * @returns {string} - מחרוזת HTML של המדבקה.
+     */
+    function createLabelHTML(item) {
+        // הוספת toFixed(2) כדי לוודא שמוצגות שתי ספרות אחרי הנקודה גם למחיר עגול
+        const price = item.price.toFixed(2); 
 
-            // פרטי יבואן מלאים, כולל שבירות שורה
-            const importerDetails = `
-                ${IMPORTER_INFO.importer}<br>
-                ${IMPORTER_INFO.address}<br>
-                ${IMPORTER_INFO.manufacturer} / ${IMPORTER_INFO.country}
-            `;
+        // פרטי יבואן מלאים, כולל שבירות שורה
+        const importerDetails = `
+            ${IMPORTER_INFO.importer}<br>
+            ${IMPORTER_INFO.address}<br>
+            ${IMPORTER_INFO.manufacturer} / ${IMPORTER_INFO.country}
+        `;
 
-            return `
-                <div class="label" style="text-align: right;">
-                    <!-- חלק עליון: מק"ט ותיאור -->
-                    <div class="flex flex-col flex-grow">
-                        <div class="sku-text">מק"ט: ${item.sku}</div>
-                        <div class="description-text mt-1 text-black">${item.description}</div>
-                        <!-- אזור ריק קטן -->
-                        <div class="flex-grow"></div> 
+        return `
+            <div class="label" style="text-align: right;">
+                <!-- חלק עליון: מק"ט ותיאור -->
+                <div class="flex flex-col flex-grow">
+                    <div class="sku-text">מק"ט: ${item.sku}</div>
+                    <div class="description-text mt-1 text-black">${item.description}</div>
+                    <!-- אזור ריק קטן -->
+                    <div class="flex-grow"></div> 
+                </div>
+
+                <!-- חלק תחתון: מחיר ופרטי יבואן -->
+                <div class="flex flex-col items-end">
+                    <div class="price-box leading-none">
+                        <span style="font-size: 10pt; font-weight: 500;">מחיר:</span> ₪${price}
                     </div>
-
-                    <!-- חלק תחתון: מחיר ופרטי יבואן -->
-                    <div class="flex flex-col items-end">
-                        <div class="price-box leading-none">
-                            <span style="font-size: 10pt; font-weight: 500;">מחיר:</span> ₪${price}
-                        </div>
-                        <div class="importer-text text-gray-700 text-right mt-1" style="line-height: 1.1;">
-                            ${importerDetails}
-                        </div>
+                    <div class="importer-text text-gray-700 text-right mt-1" style="line-height: 1.1;">
+                        ${importerDetails}
                     </div>
                 </div>
-            `;
+            </div>
+        `;
+    }
+
+    /**
+     * מעדכן את התצוגה המקדימה על בסיס הקלט הנוכחי.
+     */
+    function updatePreview() {
+        const inputSkuValue = String(document.getElementById('inputSku').value).trim();
+        const previewArea = document.getElementById('previewArea');
+        previewArea.innerHTML = '';
+        
+        if (priceMap.size === 0) return;
+
+        // מציאת הפריט לפי SKU או ברקוד
+        const item = priceMap.get(inputSkuValue);
+
+        if (item && inputSkuValue) {
+            // הצגת מדבקה בודדת לתצוגה מקדימה
+            previewArea.innerHTML = createLabelHTML(item);
+        } else if (inputSkuValue) {
+            // פריט לא נמצא
+            previewArea.innerHTML = `<div class="text-center text-red-500 p-4 border border-red-300 rounded-lg">פריט (מק"ט / ברקוד) "${inputSkuValue}" לא נמצא במחירון.</div>`;
+        } else {
+             // קלט ריק
+             previewArea.innerHTML = `<div class="text-center text-gray-400 p-4 border border-dashed rounded-lg">המדבקה תוצג כאן לאחר הזנת מק"ט וכמות.</div>`;
         }
+    }
 
-        /**
-         * מעדכן את התצוגה המקדימה על בסיס הקלט הנוכחי.
-         */
-        function updatePreview() {
-            const inputSkuValue = String(document.getElementById('inputSku').value).trim();
-            const previewArea = document.getElementById('previewArea');
-            previewArea.innerHTML = '';
-            
-            if (priceMap.size === 0) return;
+    /**
+     * מכין ומפעיל את הדפסת הדפדפן.
+     */
+    function printLabels() {
+        const inputSkuValue = String(document.getElementById('inputSku').value).trim();
+        const inputQuantityValue = parseInt(document.getElementById('inputQuantity').value);
+        const printArea = document.getElementById('printArea');
+        const item = priceMap.get(inputSkuValue);
 
-            // מציאת הפריט לפי SKU או ברקוד
-            const item = priceMap.get(inputSkuValue);
-
-            if (item && inputSkuValue) {
-                // הצגת מדבקה בודדת לתצוגה מקדימה
-                previewArea.innerHTML = createLabelHTML(item);
-            } else if (inputSkuValue) {
-                // פריט לא נמצא
-                previewArea.innerHTML = `<div class="text-center text-red-500 p-4 border border-red-300 rounded-lg">פריט (מק"ט / ברקוד) "${inputSkuValue}" לא נמצא במחירון.</div>`;
-            } else {
-                 // קלט ריק
-                 previewArea.innerHTML = `<div class="text-center text-gray-400 p-4 border border-dashed rounded-lg">המדבקה תוצג כאן לאחר הזנת מק"ט וכמות.</div>`;
-            }
-        }
-
-        /**
-         * מכין ומפעיל את הדפסת הדפדפן.
-         */
-        function printLabels() {
-            const inputSkuValue = String(document.getElementById('inputSku').value).trim();
-            const inputQuantityValue = parseInt(document.getElementById('inputQuantity').value);
-            const printArea = document.getElementById('printArea');
-            const item = priceMap.get(inputSkuValue);
-
-            if (!item || inputQuantityValue <= 0 || priceMap.size === 0) {
-                // שימוש בהודעת מערכת במקום alert
-                const statusMessage = document.getElementById('statusMessage');
-                statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-red-500 bg-red-100 text-red-800';
-                statusMessage.textContent = '❌ אנא הזן מק"ט/ברקוד תקין וכמות גדולה מ-0.';
-                return;
-            }
-
-            // יצירת כל המדבקות הנדרשות
-            let labelsHTML = '';
-            for (let i = 0; i < inputQuantityValue; i++) {
-                labelsHTML += createLabelHTML(item);
-            }
-
-            // הכנסת ה-HTML לאזור המוסתר והדפסה
-            printArea.innerHTML = labelsHTML;
-            printArea.classList.remove('hidden');
-
-            window.print();
-            
-            // ניקוי אזור ההדפסה והצגה מחדש לאחר ההדפסה
-            setTimeout(() => {
-                printArea.classList.add('hidden');
-                printArea.innerHTML = '';
-            }, 500); // נותן זמן קצר להדפסה לקרות
-        }
-
-
-        // --- פונקציות סריקת ברקוד באמצעות תמונה (לפתרון בעיות קבצים מקומיים) ---
-
-        /**
-         * מטפל בקובץ התמונה שצולם מהמצלמה או נבחר מהגלריה.
-         */
-        function handleImageScan(event) {
-            const file = event.target.files[0];
+        if (!item || inputQuantityValue <= 0 || priceMap.size === 0) {
+            // שימוש בהודעת מערכת במקום alert
             const statusMessage = document.getElementById('statusMessage');
-            
-            if (!file) return;
-
-            // עדכון הודעת סטטוס
-            statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-blue-500 bg-blue-100 text-blue-800';
-            statusMessage.textContent = '🔄 מפענח תמונה, אנא המתן...';
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                decodeBarcodeFromImage(e.target.result)
-                    .then(decodedText => {
-                        document.getElementById('inputSku').value = decodedText.trim();
-                        updatePreview();
-                        statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-green-500 bg-green-100 text-green-800';
-                        statusMessage.textContent = `✅ ברקוד נמצא: ${decodedText}. הפריט נטען.`;
-                    })
-                    .catch(error => {
-                        statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-red-500 bg-red-100 text-red-800';
-                        statusMessage.textContent = `❌ שגיאת סריקה: ${error.message}`;
-                    })
-                    .finally(() => {
-                        // איפוס שדה הקובץ כדי לאפשר צילום נוסף
-                        event.target.value = null;
-                    });
-            };
-            reader.readAsDataURL(file);
+            statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-red-500 bg-red-100 text-red-800';
+            statusMessage.textContent = '❌ אנא הזן מק"ט/ברקוד תקין וכמות גדולה מ-0.';
+            return;
         }
 
-        /**
-         * פונקציה חיצונית לטעינת תמונה ופענוח ברקוד.
-         * מכיוון שאי אפשר להשתמש בספרייה חזקה לפענוח ברקודים לינאריים מקובץ מקומי,
-         * הפונקציה הזו מנסה לזהות קודי QR (באמצעות jsQR) בלבד.
-         * לפענוח ברקודים לינאריים סטנדרטיים, נדרש שרת.
-         */
-        function decodeBarcodeFromImage(imageDataURL) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0, img.width, img.height);
-                    
-                    const imageData = ctx.getImageData(0, 0, img.width, img.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    
-                    if (code && code.data) {
-                        // קוד QR נמצא
-                        resolve(code.data);
-                    } else {
-                        // קוד QR לא נמצא. זה לא אומר שאין ברקוד לינארי,
-                        // אבל לא ניתן לפענח אותו ללא שירות צד שרת.
-                        reject(new Error("לא נמצא קוד (QR) קריא. לפענוח ברקודים לינאריים נדרשת העלאה לשרת."));
-                    }
-                };
-                img.onerror = () => reject(new Error("שגיאה בטעינת התמונה מהמצלמה/גלריה."));
-                img.src = imageDataURL;
-            });
+        // יצירת כל המדבקות הנדרשות
+        let labelsHTML = '';
+        for (let i = 0; i < inputQuantityValue; i++) {
+            labelsHTML += createLabelHTML(item);
         }
 
+        // הכנסת ה-HTML לאזור המוסתר והדפסה
+        printArea.innerHTML = labelsHTML;
+        printArea.classList.remove('hidden');
 
-        // --- אתחול המערכת ---
+        window.print();
+        
+        // ניקוי אזור ההדפסה והצגה מחדש לאחר ההדפסה
+        setTimeout(() => {
+            printArea.classList.add('hidden');
+            printArea.innerHTML = '';
+        }, 500); // נותן זמן קצר להדפסה לקרות
+    }
 
-        /**
-         * פונקציית אתחול המופעלת בטעינת הדף.
-         */
-        window.onload = function() {
-            // נסה לטעון נתונים מהזיכרון המקומי
-            const storedData = localStorage.getItem('priceMapJSON');
-            if (storedData) {
-                loadData(storedData);
-            }
 
-            // מוודאים שמצב הכפתורים משקף את המצב הנוכחי של priceMap
-            if (priceMap.size > 0) {
-                document.getElementById('scanButton').disabled = false;
-                document.getElementById('printButton').disabled = false;
-            }
-            
-            // מפעיל את עדכון התצוגה המקדימה על מנת להציג מצב התחלה
-            updatePreview();
+    // --- פונקציות סריקת ברקוד באמצעות תמונה (לפתרון בעיות קבצים מקומיים) ---
+
+    /**
+     * מטפל בקובץ התמונה שצולם מהמצלמה או נבחר מהגלריה.
+     */
+    function handleImageScan(event) {
+        const file = event.target.files[0];
+        const statusMessage = document.getElementById('statusMessage');
+        
+        if (!file) return;
+
+        // עדכון הודעת סטטוס
+        statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-blue-500 bg-blue-100 text-blue-800';
+        statusMessage.textContent = '🔄 מפענח תמונה, אנא המתן...';
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            decodeBarcodeFromImage(e.target.result)
+                .then(decodedText => {
+                    document.getElementById('inputSku').value = decodedText.trim();
+                    updatePreview();
+                    statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-green-500 bg-green-100 text-green-800';
+                    statusMessage.textContent = `✅ ברקוד נמצא: ${decodedText}. הפריט נטען.`;
+                })
+                .catch(error => {
+                    statusMessage.className = 'mb-4 text-center p-3 rounded-lg border border-red-500 bg-red-100 text-red-800';
+                    statusMessage.textContent = `❌ שגיאת סריקה: ${error.message}`;
+                })
+                .finally(() => {
+                    // איפוס שדה הקובץ כדי לאפשר צילום נוסף
+                    event.target.value = null;
+                });
         };
+        reader.readAsDataURL(file);
+    }
 
-    </script>
-</body>
-</html>
+    /**
+     * פונקציה חיצונית לטעינת תמונה ופענוח ברקוד.
+     * מכיוון שאי אפשר להשתמש בספרייה חזקה לפענוח ברקודים לינאריים מקובץ מקומי,
+     * הפונקציה הזו מנסה לזהות קודי QR (באמצעות jsQR) בלבד.
+     * לפענוח ברקודים לינאריים סטנדרטיים, נדרש שרת.
+     */
+    function decodeBarcodeFromImage(imageDataURL) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0, img.width, img.height);
+                
+                const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code && code.data) {
+                    // קוד QR נמצא
+                    resolve(code.data);
+                } else {
+                    // קוד QR לא נמצא. זה לא אומר שאין ברקוד לינארי,
+                    // אבל לא ניתן לפענח אותו ללא שירות צד שרת.
+                    reject(new Error("לא נמצא קוד (QR) קריא. לפענוח ברקודים לינאריים נדרשת העלאה לשרת."));
+                }
+            };
+            img.onerror = () => reject(new Error("שגיאה בטעינת התמונה מהמצלמה/גלריה."));
+            img.src = imageDataURL;
+        });
+    }
+
+
+    // --- אתחול המערכת ---
+
+    /**
+     * פונקציית אתחול המופעלת בטעינת הדף.
+     */
+    window.onload = function() {
+        // נסה לטעון נתונים מהזיכרון המקומי
+        const storedData = localStorage.getItem('priceMapJSON');
+        if (storedData) {
+            loadData(storedData);
+        }
+
+        // מוודאים שמצב הכפתורים משקף את המצב הנוכחי של priceMap
+        if (priceMap.size > 0) {
+            document.getElementById('scanButton').disabled = false;
+            document.getElementById('printButton').disabled = false;
+        }
+        
+        // מפעיל את עדכון התצוגה המקדימה על מנת להציג מצב התחלה
+        updatePreview();
+    };
+
+</script>
+</body></html>
