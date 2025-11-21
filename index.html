@@ -17,7 +17,7 @@
 
         * { box-sizing: border-box; } 
 
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 8px; direction: rtl; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 8px; direction: rtl; padding-bottom: 50px; }
         
         .container { max-width: 800px; margin: 0 auto; background: var(--card); padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
@@ -43,6 +43,18 @@
         .input-qty { width: 50px; padding: 8px 2px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; text-align: center; flex-shrink: 0; }
         .row-num { font-size: 0.8rem; color: #888; width: 18px; flex-shrink: 0; text-align: center;}
 
+        /* תצוגה מקדימה חיה */
+        .preview-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
+        .preview-title { font-size: 1.1rem; font-weight: bold; color: #444; margin-bottom: 10px; text-align: center; }
+        .preview-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        
+        /* כרטיס תצוגה בודד */
+        .preview-card { 
+            border: 1px solid #ddd; border-radius: 8px; padding: 5px; background: #fff; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 32mm; display: flex; flex-direction: column; align-items: center;
+        }
+        .preview-qty-badge { background: #e0e7ff; color: #3730a3; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; font-weight: bold; }
+
         /* מודאל סריקה */
         #scanner-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -56,8 +68,11 @@
         .success { background: #dcfce7 !important; color: #166534 !important; }
         .error { background: #fee2e2 !important; color: #b91c1c !important; }
 
-        /* עיצוב המדבקה (להדפסה) */
+        /* עיצוב המדבקה (להדפסה ולתצוגה) */
         .label { background: white; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+        /* גבול דק לתצוגה בלבד */
+        .preview-card .label { border: 1px solid #eee; height: 30mm; width: 30mm; padding: 1mm; }
+        
         .label-header { font-size: 9pt; font-weight: bold; white-space: nowrap; }
         .label-desc { font-size: 8pt; line-height: 1.1; max-height: 2.4em; overflow: hidden; margin-top: 2px; }
         .label-footer { margin-top: auto; padding-top: 1px; }
@@ -67,7 +82,7 @@
         @media print {
             @page { margin: 0; } 
             body { margin: 0; padding: 0; background: none; }
-            .container, .size-controls, #statusMessage { display: none !important; }
+            .container, .size-controls, #statusMessage, #scanner-modal { display: none !important; }
             #printArea { display: block !important; position: absolute; left: 0; top: 0; }
             .label { border: none !important; page-break-after: always; margin: 0; padding: 1mm; }
             .label:last-child { page-break-after: auto; }
@@ -100,6 +115,14 @@
 
     <!-- טבלת הזמנה -->
     <div id="batchContainer" class="batch-grid"></div>
+
+    <!-- תצוגה מקדימה חיה -->
+    <div class="preview-section">
+        <div class="preview-title">תצוגה מקדימה להדפסה:</div>
+        <div id="previewGrid" class="preview-grid">
+            <span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>
+        </div>
+    </div>
 
     <button class="btn-print" onclick="printBatch()">🖨️ הדפס הכל</button>
     <button class="btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
@@ -136,30 +159,31 @@
             <span style="width:20px"></span><span style="flex:1; text-align:right; margin-right:5px;">מק"ט / ברקוד</span>
             <span style="width:40px"></span><span style="width:50px; text-align:center;">כמות</span></div>`;
         for (let i = 0; i < ROWS_COUNT; i++) {
+            // הוספתי oninput גם לעדכון התצוגה המקדימה
             html += `<div class="batch-row"><span class="row-num">${i+1}</span>
-                <input type="text" id="sku-${i}" class="input-sku" oninput="saveBatchData()">
+                <input type="text" id="sku-${i}" class="input-sku" oninput="handleRowInput(${i})">
                 <button class="btn-scan-row" onclick="startScannerForRow(${i})">📷</button>
-                <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="saveBatchData()"></div>`;
+                <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="handleRowInput(${i})"></div>`;
         }
         container.innerHTML = html;
     }
 
-    // --- סורק חי בתוך האתר ---
+    // פונקציה חדשה שמטפלת בשינוי קלט: שומרת נתונים ומעדכנת תצוגה
+    function handleRowInput(i) {
+        saveBatchData();
+        updateAllPreviews();
+    }
+
+    // --- סורק חי ---
     function startScannerForRow(index) {
         scanningRowIndex = index;
         document.getElementById('scanner-modal').style.display = 'flex';
-        
         if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-        
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
-            (decodedText) => {
-                // הצלחה בסריקה
-                stopScanner();
-                handleScanResult(decodedText);
-            },
-            (errorMessage) => {} // התעלם משגיאות סריקה רגילות
+            (decodedText) => { stopScanner(); handleScanResult(decodedText); },
+            (errorMessage) => {}
         ).catch(err => {
-            alert("המצלמה לא נפתחה. וודא שאתה ב-Chrome ב-HTTPS ונתת אישור.");
+            alert("המצלמה לא נפתחה. וודא שאתה ב-HTTPS.");
             stopScanner();
         });
     }
@@ -179,16 +203,50 @@
             if (qtyInput.value === '') qtyInput.value = 1;
             
             const item = priceMap.get(cleanCode);
-            if (item) {
-                setStatus(`✅ שורה ${scanningRowIndex+1}: ${item.description}`, 'success');
-            } else {
-                setStatus(`⚠️ שורה ${scanningRowIndex+1}: לא נמצא`, 'error');
-            }
-            saveBatchData();
+            if (item) setStatus(`✅ שורה ${scanningRowIndex+1}: ${item.description}`, 'success');
+            else setStatus(`⚠️ שורה ${scanningRowIndex+1}: לא נמצא`, 'error');
+            
+            handleRowInput(scanningRowIndex); // שמירה ועדכון תצוגה
         }
     }
 
-    // --- שאר הלוגיקה (הדפסה, טעינה וכו') זהה ---
+    // --- עדכון תצוגה מקדימה ---
+    function updateAllPreviews() {
+        const previewGrid = document.getElementById('previewGrid');
+        let html = '';
+        let hasItems = false;
+
+        for (let i = 0; i < ROWS_COUNT; i++) {
+            const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
+            let qtyVal = document.getElementById(`qty-${i}`).value;
+            const qty = (qtyVal === '' && sku !== '') ? 1 : parseInt(qtyVal);
+
+            if (sku && qty > 0) {
+                const item = priceMap.get(sku);
+                if (item) {
+                    hasItems = true;
+                    html += `
+                    <div class="preview-card">
+                        <div class="preview-qty-badge">כמות: ${qty}</div>
+                        ${createLabelHTML(item)}
+                    </div>`;
+                } else {
+                    // אופציונלי: להציג שגיאה בתצוגה המקדימה
+                    html += `<div class="preview-card" style="justify-content:center; color:red; font-size:0.8rem; text-align:center;">
+                        שורה ${i+1}<br>לא נמצא
+                    </div>`;
+                }
+            }
+        }
+
+        if (!hasItems) {
+            previewGrid.innerHTML = '<span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>';
+        } else {
+            previewGrid.innerHTML = html;
+        }
+    }
+
+    // --- לוגיקה כללית ---
     function saveBatchData() {
         const data = [];
         for (let i = 0; i < ROWS_COUNT; i++) {
@@ -210,24 +268,26 @@
                     document.getElementById(`qty-${i}`).value = row.qty || '';
                 }
             });
+            updateAllPreviews(); // עדכון תצוגה בשחזור
         }
     }
 
     function clearAll() {
-        if(confirm("לנקות הכל?")) {
+        if(confirm("האם לנקות את כל השורות?")) {
             for (let i = 0; i < ROWS_COUNT; i++) {
                 document.getElementById(`sku-${i}`).value = '';
                 document.getElementById(`qty-${i}`).value = '';
             }
             saveBatchData();
+            updateAllPreviews();
         }
     }
 
     function printBatch() {
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
-        const styleEl = document.getElementById('dynamicPrintStyle');
-        styleEl.innerHTML = `@media print { @page { size: ${w}mm ${h}mm; margin: 0; } .label { width: ${w}mm !important; height: ${h}mm !important; } }`;
+        document.getElementById('dynamicPrintStyle').innerHTML = 
+            `@media print { @page { size: ${w}mm ${h}mm; margin: 0; } .label { width: ${w}mm !important; height: ${h}mm !important; } }`;
 
         let html = '';
         let hasItems = false;
@@ -267,6 +327,7 @@
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
         localStorage.setItem('labelSize', JSON.stringify({w, h}));
+        updateAllPreviews(); // עדכון גודל תצוגה אם צריך (כרגע התצוגה קבועה ל-30)
     }
 
     function loadSettings() {
@@ -296,8 +357,8 @@
                 }
             });
             localStorage.setItem('priceMapJSON', json);
-            setStatus(`✅ נטען: ${priceMap.size} פריטים`, 'success');
-        } catch (e) { setStatus('שגיאה בטעינה', 'error'); }
+            setStatus(`✅ נטען מחירון: ${priceMap.size} פריטים`, 'success');
+        } catch (e) { setStatus('שגיאה בטעינת הקובץ', 'error'); }
     }
 
     function handleFileLoad(e) {
