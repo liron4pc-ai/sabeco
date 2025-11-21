@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>מדפסת מדבקות שטח (סאבקו)</title>
     
     <style>
@@ -12,48 +12,66 @@
             --border: #d1d5db; --danger: #dc2626; --success: #16a34a;
         }
 
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; direction: rtl; }
+        * { box-sizing: border-box; } /* חשוב מאוד למניעת חריגה מהמסך */
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 8px; direction: rtl; }
         
-        .container { max-width: 800px; margin: 0 auto; background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .container { max-width: 800px; margin: 0 auto; background: var(--card); padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
-        h1 { text-align: center; color: var(--primary); margin: 0 0 15px 0; font-size: 1.5rem; }
+        h1 { text-align: center; color: var(--primary); margin: 0 0 15px 0; font-size: 1.4rem; }
         
         /* הגדרות גודל */
-        .size-controls { display: flex; gap: 10px; background: #eff6ff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe; align-items: center; justify-content: space-between; }
-        .size-select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; width: 48%; }
+        .size-controls { display: flex; gap: 8px; background: #eff6ff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe; align-items: center; justify-content: space-between; }
+        .size-select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; width: 48%; font-size: 0.9rem; }
         
-        /* כפתורים כלליים */
+        /* כפתורים */
         button { border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; padding: 10px; font-size: 1rem; transition: opacity 0.2s; }
         button:active { opacity: 0.8; }
-        .btn-file { background: #6b7280; width: 100%; margin-bottom: 10px; }
-        .btn-print { background: var(--primary); width: 100%; font-size: 1.2rem; padding: 15px; margin-top: 15px; box-shadow: 0 4px 6px rgba(37,99,235,0.3); }
-        .btn-clear { background: var(--danger); width: 100%; margin-top: 10px; }
-        .btn-scan-row { background: #7c3aed; padding: 8px; min-width: 40px; font-size: 1.2rem; }
+        .btn-file { background: #6b7280; width: 100%; margin-bottom: 10px; font-size: 0.9rem; padding: 8px; }
+        .btn-print { background: var(--primary); width: 100%; font-size: 1.1rem; padding: 12px; margin-top: 15px; box-shadow: 0 4px 6px rgba(37,99,235,0.3); }
+        .btn-clear { background: var(--danger); width: 100%; margin-top: 10px; font-size: 0.9rem; padding: 8px; }
+        .btn-scan-row { background: #7c3aed; padding: 0; width: 40px; height: 40px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        /* טבלת הזנה */
-        .batch-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
-        .batch-row { display: flex; gap: 5px; align-items: center; }
+        /* טבלת הזנה - מותאמת לנייד */
+        .batch-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .batch-row { display: flex; gap: 5px; align-items: center; width: 100%; }
         
-        .input-sku { flex: 2; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1.1rem; }
-        .input-qty { flex: 0.5; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1.1rem; text-align: center; }
-        .row-num { font-size: 0.8rem; color: #888; width: 20px; }
+        /* שדות קלט - גדלים מתוקנים */
+        .input-sku { 
+            flex: 1; /* לוקח את כל המקום הפנוי */
+            padding: 8px; 
+            border: 1px solid var(--border); 
+            border-radius: 6px; 
+            font-size: 16px; /* גודל מינימלי למניעת זום באייפון */
+            min-width: 0; /* מונע גלישה */
+        }
+        .input-qty { 
+            width: 50px; /* רוחב קבוע וקטן לכמות */
+            padding: 8px 2px; 
+            border: 1px solid var(--border); 
+            border-radius: 6px; 
+            font-size: 16px; 
+            text-align: center;
+            flex-shrink: 0; /* לא מתכווץ */
+        }
+        .row-num { font-size: 0.8rem; color: #888; width: 18px; flex-shrink: 0; text-align: center;}
 
         /* הודעות */
         #statusMessage { padding: 8px; text-align: center; background: #e0f2fe; border-radius: 6px; font-size: 0.9rem; color: #0369a1; margin-bottom: 10px; }
         .success { background: #dcfce7 !important; color: #166534 !important; }
         .error { background: #fee2e2 !important; color: #b91c1c !important; }
 
-        /* אזור תצוגה מקדימה */
-        .label { background: white; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; border: 1px solid #000; }
+        /* עיצוב המדבקה (נסתר במסך, משמש להדפסה) */
+        .label { background: white; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
         .label-header { font-size: 9pt; font-weight: bold; white-space: nowrap; }
         .label-desc { font-size: 8pt; line-height: 1.1; max-height: 2.4em; overflow: hidden; margin-top: 2px; }
         .label-footer { margin-top: auto; padding-top: 1px; }
         .label-price { font-size: 13pt; font-weight: 900; text-align: center; direction: ltr; line-height: 1.1; }
         .label-importer { font-size: 5pt; text-align: right; line-height: 1; margin-top: 1px; }
 
-        /* הגדרות הדפסה דינמיות */
+        /* הגדרות הדפסה */
         @media print {
-            @page { margin: 0; } /* הגודל ייקבע דינמית ע"י JS */
+            @page { margin: 0; } 
             body { margin: 0; padding: 0; background: none; }
             .container, .size-controls, #statusMessage { display: none !important; }
             #printArea { display: block !important; position: absolute; left: 0; top: 0; }
@@ -68,19 +86,19 @@
     <h1>מדפסת מדבקות (סאבקו)</h1>
     <div id="statusMessage">נא לטעון מחירון</div>
 
-    <!-- שליטה בגודל המדבקה -->
+    <!-- שליטה בגודל -->
     <div class="size-controls">
-        <div style="width: 100%">
-            <label style="font-size: 0.8rem;">רוחב (מ"מ):</label>
-            <select id="widthSelect" class="size-select" onchange="saveSettings()">
+        <div style="width: 48%">
+            <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">רוחב:</label>
+            <select id="widthSelect" class="size-select" onchange="saveSettings()" style="width:100%">
                 <option value="30">30 מ"מ</option>
                 <option value="40">40 מ"מ</option>
                 <option value="50">50 מ"מ</option>
             </select>
         </div>
-        <div style="width: 100%">
-            <label style="font-size: 0.8rem;">גובה (מ"מ):</label>
-            <select id="heightSelect" class="size-select" onchange="saveSettings()">
+        <div style="width: 48%">
+            <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">גובה:</label>
+            <select id="heightSelect" class="size-select" onchange="saveSettings()" style="width:100%">
                 <option value="30">30 מ"מ</option>
                 <option value="40">40 מ"מ</option>
                 <option value="50">50 מ"מ</option>
@@ -93,17 +111,13 @@
     <button class="btn-file" onclick="document.getElementById('jsonFile').click()">📂 טען קובץ מחירון</button>
 
     <!-- רשימת הזנה (12 שורות) -->
-    <div id="batchContainer" class="batch-grid">
-        <!-- השורות ייווצרו ע"י JS -->
-    </div>
+    <div id="batchContainer" class="batch-grid"></div>
 
     <button class="btn-print" onclick="printBatch()">🖨️ הדפס הכל</button>
     <button class="btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
 </div>
 
-<!-- אזור הדפסה נסתר -->
 <div id="printArea" style="display:none;"></div>
-<!-- סגנון להדפסה דינמית -->
 <style id="dynamicPrintStyle"></style>
 
 <script>
@@ -111,37 +125,38 @@
     const ROWS_COUNT = 12;
     const IMPORTER_INFO = "יבואן: סאבקו אספקה טכנית בע\"מ<br>כתובת: חוצות היוצר 13 אשקלון<br>יצרן: טרופר | ארץ ייצור: סין";
 
-    // אתחול
     window.onload = () => {
         generateRows();
-        loadSettings(); // טעינת גודל מדבקה
+        loadSettings();
         const savedMap = localStorage.getItem('priceMapJSON');
         if (savedMap) loadData(savedMap);
-        
-        // שחזור נתונים אם חזרנו מסריקה
         restoreBatchData();
-        
-        // בדיקה אם חזרנו מסריקה חיצונית
         checkScanResult();
     };
 
     function generateRows() {
         const container = document.getElementById('batchContainer');
         let html = '';
+        // כותרות קטנות מעל הטבלה להבנה
+        html += `<div style="display:flex; font-size:0.8rem; color:#666; margin-bottom:2px;">
+            <span style="width:20px"></span>
+            <span style="flex:1; text-align:right; margin-right:5px;">מק"ט / ברקוד</span>
+            <span style="width:40px"></span>
+            <span style="width:50px; text-align:center;">כמות</span>
+        </div>`;
+        
         for (let i = 0; i < ROWS_COUNT; i++) {
             html += `
             <div class="batch-row">
                 <span class="row-num">${i+1}</span>
-                <input type="text" id="sku-${i}" class="input-sku" placeholder="מק''ט" oninput="saveBatchData()">
+                <input type="text" id="sku-${i}" class="input-sku" oninput="saveBatchData()">
                 <button class="btn-scan-row" onclick="scanForRow(${i})">📲</button>
-                <input type="number" id="qty-${i}" class="input-qty" value="" placeholder="כמות" oninput="saveBatchData()">
+                <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="saveBatchData()">
             </div>`;
         }
         container.innerHTML = html;
     }
 
-    // --- ניהול נתונים ושמירה ---
-    
     function saveBatchData() {
         const data = [];
         for (let i = 0; i < ROWS_COUNT; i++) {
@@ -191,12 +206,9 @@
         }
     }
 
-    // --- סריקה חיצונית לכל שורה ---
-
     function scanForRow(rowIndex) {
-        saveBatchData(); // שמירה לפני יציאה
+        saveBatchData();
         const currentUrl = window.location.href.split('?')[0];
-        // מעבירים את מספר השורה בפרמטר row
         const returnUrl = encodeURIComponent(currentUrl + `?code={CODE}&row=${rowIndex}`);
         window.location.href = 'zxing://scan/?ret=' + returnUrl;
     }
@@ -208,16 +220,13 @@
 
         if (code && row !== null) {
             const cleanCode = code.trim().toUpperCase();
-            // הזנת הברקוד לשורה המתאימה
             const skuInput = document.getElementById(`sku-${row}`);
             const qtyInput = document.getElementById(`qty-${row}`);
             
             if (skuInput) {
                 skuInput.value = cleanCode;
-                // אם אין כמות, נשים 1 אוטומטית
                 if (qtyInput.value === '') qtyInput.value = 1;
                 
-                // בדיקה במחירון
                 const item = priceMap.get(cleanCode);
                 if (item) {
                     setStatus(`✅ שורה ${parseInt(row)+1}: ${item.description}`, 'success');
@@ -226,18 +235,14 @@
                 }
                 saveBatchData();
             }
-            // ניקוי הכתובת
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     }
-
-    // --- הדפסה ---
 
     function printBatch() {
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
         
-        // עדכון CSS דינמי לגודל הדף
         const styleEl = document.getElementById('dynamicPrintStyle');
         styleEl.innerHTML = `
             @media print { 
@@ -251,7 +256,9 @@
 
         for (let i = 0; i < ROWS_COUNT; i++) {
             const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
-            const qty = parseInt(document.getElementById(`qty-${i}`).value);
+            let qtyVal = document.getElementById(`qty-${i}`).value;
+            // אם המק"ט מלא אבל הכמות ריקה, נחשב כ-1
+            const qty = (qtyVal === '' && sku !== '') ? 1 : parseInt(qtyVal);
 
             if (sku && qty > 0) {
                 const item = priceMap.get(sku);
@@ -265,7 +272,7 @@
         }
 
         if (!hasItems) {
-            alert("לא הוזנו פריטים תקינים (או שהמק\"ט לא במחירון)");
+            alert("לא נמצאו פריטים תקינים להדפסה");
             return;
         }
 
@@ -286,7 +293,6 @@
         </div>`;
     }
 
-    // --- פונקציות עזר ---
     function setStatus(msg, type) {
         const el = document.getElementById('statusMessage');
         el.textContent = msg;
