@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>מדפסת מדבקות שטח (סאבקו)</title>
     
+    <!-- טעינת ספריית סורק חי -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
     <style>
         /* --- עיצוב פנימי --- */
         :root {
@@ -12,7 +15,7 @@
             --border: #d1d5db; --danger: #dc2626; --success: #16a34a;
         }
 
-        * { box-sizing: border-box; } /* חשוב מאוד למניעת חריגה מהמסך */
+        * { box-sizing: border-box; } 
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 8px; direction: rtl; }
         
@@ -32,36 +35,28 @@
         .btn-clear { background: var(--danger); width: 100%; margin-top: 10px; font-size: 0.9rem; padding: 8px; }
         .btn-scan-row { background: #7c3aed; padding: 0; width: 40px; height: 40px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        /* טבלת הזנה - מותאמת לנייד */
+        /* טבלת הזנה */
         .batch-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .batch-row { display: flex; gap: 5px; align-items: center; width: 100%; }
         
-        /* שדות קלט - גדלים מתוקנים */
-        .input-sku { 
-            flex: 1; /* לוקח את כל המקום הפנוי */
-            padding: 8px; 
-            border: 1px solid var(--border); 
-            border-radius: 6px; 
-            font-size: 16px; /* גודל מינימלי למניעת זום באייפון */
-            min-width: 0; /* מונע גלישה */
-        }
-        .input-qty { 
-            width: 50px; /* רוחב קבוע וקטן לכמות */
-            padding: 8px 2px; 
-            border: 1px solid var(--border); 
-            border-radius: 6px; 
-            font-size: 16px; 
-            text-align: center;
-            flex-shrink: 0; /* לא מתכווץ */
-        }
+        .input-sku { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; min-width: 0; }
+        .input-qty { width: 50px; padding: 8px 2px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; text-align: center; flex-shrink: 0; }
         .row-num { font-size: 0.8rem; color: #888; width: 18px; flex-shrink: 0; text-align: center;}
+
+        /* מודאל סריקה */
+        #scanner-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #reader { width: 100%; max-width: 500px; background: black; }
+        .close-scan { background: var(--danger); width: auto; margin-top: 20px; padding: 10px 30px; font-size: 1.2rem; }
 
         /* הודעות */
         #statusMessage { padding: 8px; text-align: center; background: #e0f2fe; border-radius: 6px; font-size: 0.9rem; color: #0369a1; margin-bottom: 10px; }
         .success { background: #dcfce7 !important; color: #166534 !important; }
         .error { background: #fee2e2 !important; color: #b91c1c !important; }
 
-        /* עיצוב המדבקה (נסתר במסך, משמש להדפסה) */
+        /* עיצוב המדבקה (להדפסה) */
         .label { background: white; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
         .label-header { font-size: 9pt; font-weight: bold; white-space: nowrap; }
         .label-desc { font-size: 8pt; line-height: 1.1; max-height: 2.4em; overflow: hidden; margin-top: 2px; }
@@ -69,7 +64,6 @@
         .label-price { font-size: 13pt; font-weight: 900; text-align: center; direction: ltr; line-height: 1.1; }
         .label-importer { font-size: 5pt; text-align: right; line-height: 1; margin-top: 1px; }
 
-        /* הגדרות הדפסה */
         @media print {
             @page { margin: 0; } 
             body { margin: 0; padding: 0; background: none; }
@@ -86,35 +80,36 @@
     <h1>מדפסת מדבקות (סאבקו)</h1>
     <div id="statusMessage">נא לטעון מחירון</div>
 
-    <!-- שליטה בגודל -->
     <div class="size-controls">
         <div style="width: 48%">
             <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">רוחב:</label>
             <select id="widthSelect" class="size-select" onchange="saveSettings()" style="width:100%">
-                <option value="30">30 מ"מ</option>
-                <option value="40">40 מ"מ</option>
-                <option value="50">50 מ"מ</option>
+                <option value="30">30 מ"מ</option><option value="40">40 מ"מ</option><option value="50">50 מ"מ</option>
             </select>
         </div>
         <div style="width: 48%">
             <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">גובה:</label>
             <select id="heightSelect" class="size-select" onchange="saveSettings()" style="width:100%">
-                <option value="30">30 מ"מ</option>
-                <option value="40">40 מ"מ</option>
-                <option value="50">50 מ"מ</option>
+                <option value="30">30 מ"מ</option><option value="40">40 מ"מ</option><option value="50">50 מ"מ</option>
             </select>
         </div>
     </div>
 
-    <!-- טעינה -->
     <input type="file" id="jsonFile" accept=".json" style="display:none" onchange="handleFileLoad(event)">
     <button class="btn-file" onclick="document.getElementById('jsonFile').click()">📂 טען קובץ מחירון</button>
 
-    <!-- רשימת הזנה (12 שורות) -->
+    <!-- טבלת הזמנה -->
     <div id="batchContainer" class="batch-grid"></div>
 
     <button class="btn-print" onclick="printBatch()">🖨️ הדפס הכל</button>
     <button class="btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
+</div>
+
+<!-- מודאל סריקה חי -->
+<div id="scanner-modal">
+    <h2 style="color:white; margin-bottom:20px;">סרוק ברקוד</h2>
+    <div id="reader"></div>
+    <button class="close-scan" onclick="stopScanner()">ביטול</button>
 </div>
 
 <div id="printArea" style="display:none;"></div>
@@ -124,6 +119,8 @@
     let priceMap = new Map();
     const ROWS_COUNT = 12;
     const IMPORTER_INFO = "יבואן: סאבקו אספקה טכנית בע\"מ<br>כתובת: חוצות היוצר 13 אשקלון<br>יצרן: טרופר | ארץ ייצור: סין";
+    let html5QrCode = null;
+    let scanningRowIndex = null;
 
     window.onload = () => {
         generateRows();
@@ -131,32 +128,67 @@
         const savedMap = localStorage.getItem('priceMapJSON');
         if (savedMap) loadData(savedMap);
         restoreBatchData();
-        checkScanResult();
     };
 
     function generateRows() {
         const container = document.getElementById('batchContainer');
-        let html = '';
-        // כותרות קטנות מעל הטבלה להבנה
-        html += `<div style="display:flex; font-size:0.8rem; color:#666; margin-bottom:2px;">
-            <span style="width:20px"></span>
-            <span style="flex:1; text-align:right; margin-right:5px;">מק"ט / ברקוד</span>
-            <span style="width:40px"></span>
-            <span style="width:50px; text-align:center;">כמות</span>
-        </div>`;
-        
+        let html = `<div style="display:flex; font-size:0.8rem; color:#666; margin-bottom:2px;">
+            <span style="width:20px"></span><span style="flex:1; text-align:right; margin-right:5px;">מק"ט / ברקוד</span>
+            <span style="width:40px"></span><span style="width:50px; text-align:center;">כמות</span></div>`;
         for (let i = 0; i < ROWS_COUNT; i++) {
-            html += `
-            <div class="batch-row">
-                <span class="row-num">${i+1}</span>
+            html += `<div class="batch-row"><span class="row-num">${i+1}</span>
                 <input type="text" id="sku-${i}" class="input-sku" oninput="saveBatchData()">
-                <button class="btn-scan-row" onclick="scanForRow(${i})">📲</button>
-                <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="saveBatchData()">
-            </div>`;
+                <button class="btn-scan-row" onclick="startScannerForRow(${i})">📷</button>
+                <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="saveBatchData()"></div>`;
         }
         container.innerHTML = html;
     }
 
+    // --- סורק חי בתוך האתר ---
+    function startScannerForRow(index) {
+        scanningRowIndex = index;
+        document.getElementById('scanner-modal').style.display = 'flex';
+        
+        if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
+            (decodedText) => {
+                // הצלחה בסריקה
+                stopScanner();
+                handleScanResult(decodedText);
+            },
+            (errorMessage) => {} // התעלם משגיאות סריקה רגילות
+        ).catch(err => {
+            alert("המצלמה לא נפתחה. וודא שאתה ב-Chrome ב-HTTPS ונתת אישור.");
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if(html5QrCode) html5QrCode.stop().then(() => html5QrCode.clear()).catch(()=>{});
+        document.getElementById('scanner-modal').style.display = 'none';
+    }
+
+    function handleScanResult(code) {
+        const cleanCode = code.trim().toUpperCase();
+        const skuInput = document.getElementById(`sku-${scanningRowIndex}`);
+        const qtyInput = document.getElementById(`qty-${scanningRowIndex}`);
+        
+        if (skuInput) {
+            skuInput.value = cleanCode;
+            if (qtyInput.value === '') qtyInput.value = 1;
+            
+            const item = priceMap.get(cleanCode);
+            if (item) {
+                setStatus(`✅ שורה ${scanningRowIndex+1}: ${item.description}`, 'success');
+            } else {
+                setStatus(`⚠️ שורה ${scanningRowIndex+1}: לא נמצא`, 'error');
+            }
+            saveBatchData();
+        }
+    }
+
+    // --- שאר הלוגיקה (הדפסה, טעינה וכו') זהה ---
     function saveBatchData() {
         const data = [];
         for (let i = 0; i < ROWS_COUNT; i++) {
@@ -182,7 +214,7 @@
     }
 
     function clearAll() {
-        if(confirm("האם לנקות את כל השורות?")) {
+        if(confirm("לנקות הכל?")) {
             for (let i = 0; i < ROWS_COUNT; i++) {
                 document.getElementById(`sku-${i}`).value = '';
                 document.getElementById(`qty-${i}`).value = '';
@@ -191,91 +223,29 @@
         }
     }
 
-    function saveSettings() {
-        const w = document.getElementById('widthSelect').value;
-        const h = document.getElementById('heightSelect').value;
-        localStorage.setItem('labelSize', JSON.stringify({w, h}));
-    }
-
-    function loadSettings() {
-        const saved = localStorage.getItem('labelSize');
-        if (saved) {
-            const {w, h} = JSON.parse(saved);
-            document.getElementById('widthSelect').value = w;
-            document.getElementById('heightSelect').value = h;
-        }
-    }
-
-    function scanForRow(rowIndex) {
-        saveBatchData();
-        const currentUrl = window.location.href.split('?')[0];
-        const returnUrl = encodeURIComponent(currentUrl + `?code={CODE}&row=${rowIndex}`);
-        window.location.href = 'zxing://scan/?ret=' + returnUrl;
-    }
-
-    function checkScanResult() {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        const row = params.get('row');
-
-        if (code && row !== null) {
-            const cleanCode = code.trim().toUpperCase();
-            const skuInput = document.getElementById(`sku-${row}`);
-            const qtyInput = document.getElementById(`qty-${row}`);
-            
-            if (skuInput) {
-                skuInput.value = cleanCode;
-                if (qtyInput.value === '') qtyInput.value = 1;
-                
-                const item = priceMap.get(cleanCode);
-                if (item) {
-                    setStatus(`✅ שורה ${parseInt(row)+1}: ${item.description}`, 'success');
-                } else {
-                    setStatus(`⚠️ שורה ${parseInt(row)+1}: ברקוד לא נמצא`, 'error');
-                }
-                saveBatchData();
-            }
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-    }
-
     function printBatch() {
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
-        
         const styleEl = document.getElementById('dynamicPrintStyle');
-        styleEl.innerHTML = `
-            @media print { 
-                @page { size: ${w}mm ${h}mm; margin: 0; } 
-                .label { width: ${w}mm !important; height: ${h}mm !important; } 
-            }
-        `;
+        styleEl.innerHTML = `@media print { @page { size: ${w}mm ${h}mm; margin: 0; } .label { width: ${w}mm !important; height: ${h}mm !important; } }`;
 
         let html = '';
         let hasItems = false;
-
         for (let i = 0; i < ROWS_COUNT; i++) {
             const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
             let qtyVal = document.getElementById(`qty-${i}`).value;
-            // אם המק"ט מלא אבל הכמות ריקה, נחשב כ-1
             const qty = (qtyVal === '' && sku !== '') ? 1 : parseInt(qtyVal);
 
             if (sku && qty > 0) {
                 const item = priceMap.get(sku);
                 if (item) {
                     hasItems = true;
-                    for (let k = 0; k < qty; k++) {
-                        html += createLabelHTML(item);
-                    }
+                    for (let k = 0; k < qty; k++) { html += createLabelHTML(item); }
                 }
             }
         }
 
-        if (!hasItems) {
-            alert("לא נמצאו פריטים תקינים להדפסה");
-            return;
-        }
-
+        if (!hasItems) { alert("אין פריטים תקינים להדפסה"); return; }
         document.getElementById('printArea').innerHTML = html;
         setTimeout(() => window.print(), 200);
     }
@@ -291,6 +261,21 @@
                 <div class="label-importer">${IMPORTER_INFO}</div>
             </div>
         </div>`;
+    }
+
+    function saveSettings() {
+        const w = document.getElementById('widthSelect').value;
+        const h = document.getElementById('heightSelect').value;
+        localStorage.setItem('labelSize', JSON.stringify({w, h}));
+    }
+
+    function loadSettings() {
+        const saved = localStorage.getItem('labelSize');
+        if (saved) {
+            const {w, h} = JSON.parse(saved);
+            document.getElementById('widthSelect').value = w;
+            document.getElementById('heightSelect').value = h;
+        }
     }
 
     function setStatus(msg, type) {
@@ -311,8 +296,8 @@
                 }
             });
             localStorage.setItem('priceMapJSON', json);
-            setStatus(`✅ נטען מחירון: ${priceMap.size} פריטים`, 'success');
-        } catch (e) { setStatus('שגיאה בטעינת הקובץ', 'error'); }
+            setStatus(`✅ נטען: ${priceMap.size} פריטים`, 'success');
+        } catch (e) { setStatus('שגיאה בטעינה', 'error'); }
     }
 
     function handleFileLoad(e) {
