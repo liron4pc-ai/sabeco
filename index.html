@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>מדפסת מדבקות שטח (סאבקו)</title>
     
-    <!-- טעינת ספריית סורק חי -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
-        /* --- עיצוב פנימי --- */
+        /* --- משתנים בסיסיים --- */
         :root {
             --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937;
             --border: #d1d5db; --danger: #dc2626; --success: #16a34a;
+            /* משתנה לשינוי גודל פונט דינמי */
+            --scale-factor: 1; 
         }
 
         * { box-sizing: border-box; } 
@@ -35,31 +36,25 @@
         .btn-clear { background: var(--danger); width: 100%; margin-top: 10px; font-size: 0.9rem; padding: 8px; }
         .btn-scan-row { background: #7c3aed; padding: 0; width: 40px; height: 40px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        /* טבלת הזנה */
+        /* טבלה */
         .batch-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .batch-row { display: flex; gap: 5px; align-items: center; width: 100%; }
-        
         .input-sku { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; min-width: 0; }
         .input-qty { width: 50px; padding: 8px 2px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; text-align: center; flex-shrink: 0; }
         .row-num { font-size: 0.8rem; color: #888; width: 18px; flex-shrink: 0; text-align: center;}
 
-        /* תצוגה מקדימה חיה */
+        /* תצוגה מקדימה */
         .preview-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
         .preview-title { font-size: 1.1rem; font-weight: bold; color: #444; margin-bottom: 10px; text-align: center; }
         .preview-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-        
-        /* כרטיס תצוגה בודד */
         .preview-card { 
             border: 1px solid #ddd; border-radius: 8px; padding: 5px; background: #fff; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 32mm; display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center;
         }
         .preview-qty-badge { background: #e0e7ff; color: #3730a3; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; font-weight: bold; }
 
         /* מודאל סריקה */
-        #scanner-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; justify-content: center; align-items: center;
-        }
+        #scanner-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
         #reader { width: 100%; max-width: 500px; background: black; }
         .close-scan { background: var(--danger); width: auto; margin-top: 20px; padding: 10px 30px; font-size: 1.2rem; }
 
@@ -68,19 +63,26 @@
         .success { background: #dcfce7 !important; color: #166534 !important; }
         .error { background: #fee2e2 !important; color: #b91c1c !important; }
 
-        /* עיצוב המדבקה (להדפסה ולתצוגה) */
-        .label { background: white; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+        /* === עיצוב המדבקה הדינמי === */
+        .label { 
+            background: white; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            position: relative; 
+            overflow: hidden; 
+            /* הגדרת גדלים בתוך ה-JS לפי בחירה */
+        }
         /* גבול דק לתצוגה בלבד */
-        .preview-card .label { border: 1px solid #eee; height: 30mm; width: 30mm; padding: 1mm; }
+        .preview-card .label { border: 1px solid #eee; }
         
-        .label-header { font-size: 9pt; font-weight: bold; white-space: nowrap; }
-        .label-desc { font-size: 8pt; line-height: 1.1; max-height: 2.4em; overflow: hidden; margin-top: 2px; }
+        /* שימוש ב-scale-factor להגדלת פונטים */
+        .label-header { font-size: calc(9pt * var(--scale-factor)); font-weight: bold; white-space: nowrap; }
+        .label-desc { font-size: calc(8pt * var(--scale-factor)); line-height: 1.15; max-height: 2.4em; overflow: hidden; margin-top: 2px; }
         .label-footer { margin-top: auto; padding-top: 1px; }
-        .label-price { font-size: 13pt; font-weight: 900; text-align: center; direction: ltr; line-height: 1.1; }
-        .label-importer { font-size: 5pt; text-align: right; line-height: 1; margin-top: 1px; }
-
-        /* קרדיט */
-        .credits { text-align: center; font-size: 0.75rem; color: #888; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
+        .label-price { font-size: calc(13pt * var(--scale-factor)); font-weight: 900; text-align: center; direction: ltr; line-height: 1.1; }
+        .label-importer { font-size: calc(5pt * var(--scale-factor)); text-align: right; line-height: 1; margin-top: 2px; }
 
         @media print {
             @page { margin: 0; } 
@@ -101,13 +103,13 @@
     <div class="size-controls">
         <div style="width: 48%">
             <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">רוחב:</label>
-            <select id="widthSelect" class="size-select" onchange="saveSettings()" style="width:100%">
+            <select id="widthSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
                 <option value="30">30 מ"מ</option><option value="40">40 מ"מ</option><option value="50">50 מ"מ</option>
             </select>
         </div>
         <div style="width: 48%">
             <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">גובה:</label>
-            <select id="heightSelect" class="size-select" onchange="saveSettings()" style="width:100%">
+            <select id="heightSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
                 <option value="30">30 מ"מ</option><option value="40">40 מ"מ</option><option value="50">50 מ"מ</option>
             </select>
         </div>
@@ -121,7 +123,7 @@
 
     <!-- תצוגה מקדימה חיה -->
     <div class="preview-section">
-        <div class="preview-title">תצוגה מקדימה להדפסה:</div>
+        <div class="preview-title">תצוגה מקדימה (גודל מדבקה מותאם):</div>
         <div id="previewGrid" class="preview-grid">
             <span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>
         </div>
@@ -130,12 +132,12 @@
     <button class="btn-print" onclick="printBatch()">🖨️ הדפס הכל</button>
     <button class="btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
 
-    <div class="credits">
-        פותח ע"י <b>לירון אופק</b> ⚡ בסיוע בינה מלאכותית
+    <div style="text-align:center; margin-top:20px; font-size:0.7rem; color:#888;">
+        פותח ע"י <b>לירון אופק</b> ⚡
     </div>
 </div>
 
-<!-- מודאל סריקה חי -->
+<!-- מודאל סריקה -->
 <div id="scanner-modal">
     <h2 style="color:white; margin-bottom:20px;">סרוק ברקוד</h2>
     <div id="reader"></div>
@@ -154,12 +156,41 @@
 
     window.onload = () => {
         generateRows();
-        loadSettings();
+        loadSettings(); // טוען גודל ומחיל אותו
         const savedMap = localStorage.getItem('priceMapJSON');
         if (savedMap) loadData(savedMap);
         restoreBatchData();
     };
 
+    // --- ניהול גודל מדבקה ופונטים ---
+    function updateLabelSizeSettings() {
+        const w = document.getElementById('widthSelect').value;
+        const h = document.getElementById('heightSelect').value;
+        
+        // חישוב פקטור הגדלה (מבוסס על המינימום בין רוחב לגובה ביחס ל-30 מ"מ)
+        // לדוגמה: ב-50x50 הפקטור הוא 1.66, אז הפונטים יגדלו פי 1.66
+        const minDim = Math.min(w, h);
+        const scale = minDim / 30;
+        
+        // עדכון המשתנה ב-CSS
+        document.documentElement.style.setProperty('--scale-factor', scale);
+        
+        // שמירה ועדכון תצוגה
+        localStorage.setItem('labelSize', JSON.stringify({w, h}));
+        updateAllPreviews();
+    }
+
+    function loadSettings() {
+        const saved = localStorage.getItem('labelSize');
+        if (saved) {
+            const {w, h} = JSON.parse(saved);
+            document.getElementById('widthSelect').value = w;
+            document.getElementById('heightSelect').value = h;
+        }
+        updateLabelSizeSettings(); // החלת הגדרות ראשונית
+    }
+
+    // --- טבלה ונתונים ---
     function generateRows() {
         const container = document.getElementById('batchContainer');
         let html = `<div style="display:flex; font-size:0.8rem; color:#666; margin-bottom:2px;">
@@ -179,6 +210,7 @@
         updateAllPreviews();
     }
 
+    // --- סריקה ---
     function startScannerForRow(index) {
         scanningRowIndex = index;
         document.getElementById('scanner-modal').style.display = 'flex';
@@ -186,10 +218,7 @@
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
             (decodedText) => { stopScanner(); handleScanResult(decodedText); },
             (errorMessage) => {}
-        ).catch(err => {
-            alert("המצלמה לא נפתחה. וודא שאתה ב-HTTPS.");
-            stopScanner();
-        });
+        ).catch(err => { alert("המצלמה לא נפתחה. וודא HTTPS."); stopScanner(); });
     }
 
     function stopScanner() {
@@ -214,8 +243,12 @@
         }
     }
 
+    // --- תצוגה מקדימה חכמה ---
     function updateAllPreviews() {
         const previewGrid = document.getElementById('previewGrid');
+        const w = document.getElementById('widthSelect').value;
+        const h = document.getElementById('heightSelect').value;
+        
         let html = '';
         let hasItems = false;
 
@@ -228,26 +261,71 @@
                 const item = priceMap.get(sku);
                 if (item) {
                     hasItems = true;
+                    // הוספת סגנון inline לגודל המדבקה בתצוגה
                     html += `
                     <div class="preview-card">
                         <div class="preview-qty-badge">כמות: ${qty}</div>
-                        ${createLabelHTML(item)}
-                    </div>`;
-                } else {
-                    html += `<div class="preview-card" style="justify-content:center; color:red; font-size:0.8rem; text-align:center;">
-                        שורה ${i+1}<br>לא נמצא
+                        <div class="label" style="width:${w}mm; height:${h}mm;">
+                            ${getLabelContent(item)}
+                        </div>
                     </div>`;
                 }
             }
         }
-
-        if (!hasItems) {
-            previewGrid.innerHTML = '<span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>';
-        } else {
-            previewGrid.innerHTML = html;
-        }
+        
+        if (!hasItems) previewGrid.innerHTML = '<span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>';
+        else previewGrid.innerHTML = html;
     }
 
+    // --- תוכן המדבקה (לשימוש חוזר) ---
+    function getLabelContent(item) {
+        return `
+            <div>
+                <div class="label-header">מק"ט: ${item.sku}</div>
+                <div class="label-desc">${item.description}</div>
+            </div>
+            <div class="label-footer">
+                <div class="label-price">₪${item.price.toFixed(2)}</div>
+                <div class="label-importer">${IMPORTER_INFO}</div>
+            </div>
+        `;
+    }
+
+    // --- הדפסה ---
+    function printBatch() {
+        const w = document.getElementById('widthSelect').value;
+        const h = document.getElementById('heightSelect').value;
+        
+        document.getElementById('dynamicPrintStyle').innerHTML = 
+            `@media print { 
+                @page { size: ${w}mm ${h}mm; margin: 0; } 
+                .label { width: ${w}mm !important; height: ${h}mm !important; } 
+            }`;
+
+        let html = '';
+        let hasItems = false;
+        for (let i = 0; i < ROWS_COUNT; i++) {
+            const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
+            let qtyVal = document.getElementById(`qty-${i}`).value;
+            const qty = (qtyVal === '' && sku !== '') ? 1 : parseInt(qtyVal);
+
+            if (sku && qty > 0) {
+                const item = priceMap.get(sku);
+                if (item) {
+                    hasItems = true;
+                    for (let k = 0; k < qty; k++) { 
+                        html += `<div class="label">${getLabelContent(item)}</div>`; 
+                    }
+                }
+            }
+        }
+
+        if (!hasItems) { alert("אין פריטים תקינים להדפסה"); return; }
+        document.getElementById('printArea').innerHTML = html;
+        setTimeout(() => window.print(), 200);
+    }
+
+    // --- עזרים ---
     function saveBatchData() {
         const data = [];
         for (let i = 0; i < ROWS_COUNT; i++) {
@@ -284,62 +362,6 @@
         }
     }
 
-    function printBatch() {
-        const w = document.getElementById('widthSelect').value;
-        const h = document.getElementById('heightSelect').value;
-        document.getElementById('dynamicPrintStyle').innerHTML = 
-            `@media print { @page { size: ${w}mm ${h}mm; margin: 0; } .label { width: ${w}mm !important; height: ${h}mm !important; } }`;
-
-        let html = '';
-        let hasItems = false;
-        for (let i = 0; i < ROWS_COUNT; i++) {
-            const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
-            let qtyVal = document.getElementById(`qty-${i}`).value;
-            const qty = (qtyVal === '' && sku !== '') ? 1 : parseInt(qtyVal);
-
-            if (sku && qty > 0) {
-                const item = priceMap.get(sku);
-                if (item) {
-                    hasItems = true;
-                    for (let k = 0; k < qty; k++) { html += createLabelHTML(item); }
-                }
-            }
-        }
-
-        if (!hasItems) { alert("אין פריטים תקינים להדפסה"); return; }
-        document.getElementById('printArea').innerHTML = html;
-        setTimeout(() => window.print(), 200);
-    }
-
-    function createLabelHTML(item) {
-        return `<div class="label">
-            <div style="text-align:right;">
-                <div class="label-header">מק"ט: ${item.sku}</div>
-                <div class="label-desc">${item.description}</div>
-            </div>
-            <div class="label-footer">
-                <div class="label-price">₪${item.price.toFixed(2)}</div>
-                <div class="label-importer">${IMPORTER_INFO}</div>
-            </div>
-        </div>`;
-    }
-
-    function saveSettings() {
-        const w = document.getElementById('widthSelect').value;
-        const h = document.getElementById('heightSelect').value;
-        localStorage.setItem('labelSize', JSON.stringify({w, h}));
-        updateAllPreviews();
-    }
-
-    function loadSettings() {
-        const saved = localStorage.getItem('labelSize');
-        if (saved) {
-            const {w, h} = JSON.parse(saved);
-            document.getElementById('widthSelect').value = w;
-            document.getElementById('heightSelect').value = h;
-        }
-    }
-
     function setStatus(msg, type) {
         const el = document.getElementById('statusMessage');
         el.textContent = msg;
@@ -359,7 +381,7 @@
             });
             localStorage.setItem('priceMapJSON', json);
             setStatus(`✅ נטען מחירון: ${priceMap.size} פריטים`, 'success');
-        } catch (e) { setStatus('שגיאה בטעינת הקובץ', 'error'); }
+        } catch (e) { setStatus('שגיאה בטעינה', 'error'); }
     }
 
     function handleFileLoad(e) {
