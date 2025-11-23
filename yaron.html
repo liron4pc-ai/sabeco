@@ -14,7 +14,9 @@
             --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937;
             --border: #d1d5db; --danger: #dc2626; --success: #16a34a;
             --scan-btn: #f97316;
-            --scale-factor: 1;
+            
+            /* פקטור קבוע לתצוגה במסך - תמיד נראה כמו 33 מ"מ */
+            --scale-factor: 1.1; 
         }
 
         * { box-sizing: border-box; } 
@@ -26,8 +28,6 @@
         /* כותרת */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px; height: 70px; }
         .header-title { font-size: 1.2rem; font-weight: 800; color: var(--text); text-align: center; line-height: 1.1; flex-grow: 1; }
-        
-        /* לוגואים */
         .logo-img { max-height: 55px; max-width: 80px; object-fit: contain; }
         .logo-fallback { font-weight: 900; font-size: 1rem; color: #ccc; }
         .icon-barcode { width: 24px; height: 24px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -50,17 +50,10 @@
         .input-qty { width: 50px; padding: 8px 2px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; text-align: center; flex-shrink: 0; }
         .row-num { font-size: 0.8rem; color: #888; width: 18px; flex-shrink: 0; text-align: center;}
 
-        /* תצוגה מקדימה משופרת */
+        /* תצוגה מקדימה */
         .preview-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
-        .preview-title { font-size: 1.1rem; font-weight: bold; color: #444; margin-bottom: 10px; text-align: center; }
         .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; justify-items: center; }
-        
-        .preview-card { 
-            border: 1px solid #ddd; border-radius: 8px; padding: 8px; background: #fff; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-            display: flex; flex-direction: column; align-items: center; 
-            width: 100%; max-width: 170px; /* מעט רחב יותר */
-        }
+        .preview-card { border: 1px solid #ddd; border-radius: 8px; padding: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 170px; }
         .preview-qty-badge { background: #e0e7ff; color: #3730a3; font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: bold; }
 
         /* מודאל */
@@ -71,7 +64,7 @@
         .success { background: #dcfce7 !important; color: #166534 !important; }
         .error { background: #fee2e2 !important; color: #b91c1c !important; }
 
-        /* === עיצוב המדבקה (דינמי) === */
+        /* === עיצוב המדבקה (קבוע למסך) === */
         .label { 
             background: white; 
             box-sizing: border-box; 
@@ -81,15 +74,10 @@
             position: relative; 
             overflow: hidden; 
         }
-        
-        /* התאמות ספציפיות לתצוגה המקדימה כדי שייראה טוב */
-        .preview-card .label { 
-            border: 1px solid #eee; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+        .preview-card .label { border: 1px solid #eee; }
         
         .label-header { 
-            font-size: calc(10pt * var(--scale-factor)); 
+            font-size: calc(9pt * var(--scale-factor)); 
             font-weight: 800; 
             white-space: nowrap; 
             text-align: center; 
@@ -98,7 +86,7 @@
         }
         
         .label-desc { 
-            font-size: calc(8.5pt * var(--scale-factor)); /* פונט טיפה קטן יותר כדי שייכנס יפה */
+            font-size: calc(8.5pt * var(--scale-factor)); 
             line-height: 1.2; 
             font-weight: 600; 
             display: -webkit-box; 
@@ -113,9 +101,9 @@
         .label-footer { 
             margin-top: 3px; 
             display: flex; 
-            flex-direction: column; /* שינוי: מחיר ויבואן אחד מתחת לשני */
+            flex-direction: column; 
             align-items: center;
-            border-top: 1px solid #eee; 
+            border-top: none; /* הוסר הקו */
             padding-top: 3px;
         }
         
@@ -135,6 +123,7 @@
             width: 100%;
         }
 
+        /* הגדרות הדפסה - כאן קורה הקסם של שינוי הגודל האמיתי */
         @media print {
             @page { margin: 0; } 
             body { margin: 0; padding: 0; background: none; }
@@ -148,15 +137,13 @@
 <body>
 
 <div class="container">
-    <!-- כותרת ממותגת עם תמונות -->
     <div class="app-header">
-        <!-- לוגו ימין (סאבקו - תוקן שם הקובץ) -->
+        <!-- לוגו ימין (סאבקו - תוקן ל-jpg) -->
         <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
         <div class="logo-fallback" style="display:none; color:#1e3a8a;">SABCO</div>
 
         <div class="header-title">הדפסת מדבקות</div>
 
-        <!-- לוגו שמאל (ACE) -->
         <img src="ace.png" alt="ACE" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
         <div class="logo-fallback" style="display:none; color:#dc2626;">ACE</div>
     </div>
@@ -166,7 +153,7 @@
     <div class="size-controls">
         <div style="width: 48%">
             <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">רוחב:</label>
-            <select id="widthSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
+            <select id="widthSelect" class="size-select" onchange="saveSettings()" style="width:100%">
                 <option value="30">30 מ"מ</option>
                 <option value="33" selected>33 מ"מ</option>
                 <option value="40">40 מ"מ</option>
@@ -175,7 +162,7 @@
         </div>
         <div style="width: 48%">
             <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">גובה:</label>
-            <select id="heightSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
+            <select id="heightSelect" class="size-select" onchange="saveSettings()" style="width:100%">
                 <option value="30">30 מ"מ</option>
                 <option value="33" selected>33 מ"מ</option>
                 <option value="40">40 מ"מ</option>
@@ -228,13 +215,11 @@
         restoreBatchData();
     };
 
-    function updateLabelSizeSettings() {
+    function saveSettings() {
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
-        const minDim = Math.min(w, h);
-        const scale = minDim / 30; 
-        document.documentElement.style.setProperty('--scale-factor', scale);
         localStorage.setItem('labelSize', JSON.stringify({w, h}));
+        // לא משנה את ה-Scale Factor במסך, רק שומר להדפסה
         updateAllPreviews();
     }
 
@@ -245,7 +230,7 @@
             document.getElementById('widthSelect').value = w;
             document.getElementById('heightSelect').value = h;
         }
-        updateLabelSizeSettings();
+        updateAllPreviews();
     }
 
     function generateRows() {
@@ -306,8 +291,9 @@
 
     function updateAllPreviews() {
         const previewGrid = document.getElementById('previewGrid');
-        const w = document.getElementById('widthSelect').value;
-        const h = document.getElementById('heightSelect').value;
+        // בתצוגה במסך - אנחנו מקבעים את הגודל ל-33x33 כדי שייראה תמיד טוב
+        // בהדפסה (printBatch) נשתמש בגודל האמיתי שנבחר
+        
         let html = '';
         let hasItems = false;
 
@@ -323,13 +309,14 @@
                     html += `
                     <div class="preview-card">
                         <div class="preview-qty-badge">כמות: ${qty}</div>
-                        <div class="label" style="width:${w}mm; height:${h}mm;">
+                        <div class="label" style="width:33mm; height:33mm;">
                             ${getLabelContent(item)}
                         </div>
                     </div>`;
                 }
             }
         }
+        
         if (!hasItems) previewGrid.innerHTML = '<span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>';
         else previewGrid.innerHTML = html;
     }
@@ -347,10 +334,20 @@
     }
 
     function printBatch() {
+        // כאן אנחנו לוקחים את הגודל האמיתי שבחר המשתמש
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
+        
+        // חישוב פקטור הגדלה להדפסה בלבד (אם הגודל הוא 50, הפונט יגדל)
+        const minDim = Math.min(w, h);
+        const printScale = minDim / 30; // יחסית ל-30 מ"מ
+
         document.getElementById('dynamicPrintStyle').innerHTML = 
-            `@media print { @page { size: ${w}mm ${h}mm; margin: 0; } .label { width: ${w}mm !important; height: ${h}mm !important; } }`;
+            `@media print { 
+                @page { size: ${w}mm ${h}mm; margin: 0; } 
+                body { --scale-factor: ${printScale}; } /* עדכון גודל הפונט רק להדפסה */
+                .label { width: ${w}mm !important; height: ${h}mm !important; } 
+            }`;
 
         let html = '';
         let hasItems = false;
