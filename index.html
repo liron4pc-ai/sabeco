@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>מדפסת מדבקות שטח (סאבקו)</title>
     
-    <!-- טעינת ספריית סורק חי -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
@@ -23,14 +22,12 @@
         
         .container { max-width: 800px; margin: 0 auto; background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
-        /* כותרת */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px; height: 70px; }
         .header-title { font-size: 1.2rem; font-weight: 800; color: var(--text); text-align: center; line-height: 1.1; flex-grow: 1; }
         .logo-img { max-height: 55px; max-width: 80px; object-fit: contain; }
         .logo-fallback { font-weight: 900; font-size: 1rem; color: #ccc; }
         .icon-barcode { width: 24px; height: 24px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         
-        /* גדלים וכפתורים */
         .size-controls { display: flex; gap: 8px; background: #eff6ff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe; align-items: center; justify-content: space-between; }
         .size-select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; width: 48%; font-size: 0.9rem; }
         
@@ -40,22 +37,8 @@
         .btn-print { background: var(--primary); width: 100%; font-size: 1.2rem; padding: 12px; margin-top: 15px; box-shadow: 0 4px 6px rgba(37,99,235,0.3); position: sticky; bottom: 10px; z-index: 100; }
         .btn-clear { background: var(--danger); width: 100%; margin-top: 10px; font-size: 0.9rem; padding: 8px; }
         .btn-scan-row { background: var(--scan-btn); padding: 0; width: 40px; height: 40px; font-size: 1.2rem; flex-shrink: 0; border-radius: 8px; }
-        
-        /* כפתור מחיקת שורה (X) */
-        .btn-delete-row { 
-            background: #e5e7eb; 
-            color: #000; 
-            padding: 0; 
-            width: 30px; 
-            height: 30px; 
-            font-size: 1rem; 
-            flex-shrink: 0; 
-            border-radius: 6px; 
-            border: 1px solid #ccc;
-            margin-right: 5px; /* מרחק מהכמות */
-        }
+        .btn-delete-row { background: #e5e7eb; color: #000; padding: 0; width: 30px; height: 30px; font-size: 1rem; flex-shrink: 0; border-radius: 6px; border: 1px solid #ccc; margin-right: 5px; }
 
-        /* טבלה */
         .batch-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
         .batch-row-container { display: flex; flex-direction: column; width: 100%; }
         .batch-row { display: flex; gap: 5px; align-items: center; width: 100%; }
@@ -66,18 +49,15 @@
         .input-qty { width: 50px; padding: 8px 2px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; text-align: center; flex-shrink: 0; }
         .row-num { font-size: 0.8rem; color: #888; width: 18px; flex-shrink: 0; text-align: center;}
         
-        /* הודעת שגיאה מתחת לשורה */
         .error-msg { color: var(--danger); font-size: 0.75rem; margin-top: 2px; margin-right: 25px; display: none; }
         .error-msg.visible { display: block; }
 
-        /* תצוגה מקדימה */
         .preview-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
         .preview-title { font-size: 1.1rem; font-weight: bold; color: #444; margin-bottom: 10px; text-align: center; }
         .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; justify-items: center; }
         .preview-card { border: 1px solid #ddd; border-radius: 8px; padding: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 170px; }
         .preview-qty-badge { background: #e0e7ff; color: #3730a3; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; font-weight: bold; }
 
-        /* מודאל */
         #scanner-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
         #reader { width: 100%; max-width: 500px; background: black; }
         .close-scan { background: var(--danger); width: auto; margin-top: 20px; padding: 10px 30px; font-size: 1.2rem; }
@@ -210,16 +190,17 @@
         let html = `<div style="display:flex; font-size:0.8rem; color:#666; margin-bottom:2px;">
             <span style="width:20px"></span><span style="flex:1; text-align:right; margin-right:5px;">מק"ט / ברקוד</span>
             <span style="width:40px"></span><span style="width:50px; text-align:center;">כמות</span>
-            <span style="width:30px"></span></div>`; // מרווח לכפתור מחיקה
+            <span style="width:30px"></span></div>`;
             
         for (let i = 0; i < ROWS_COUNT; i++) {
+            // שינוי: onchange במקום oninput למניעת קפיצות בזמן הקלדה
             html += `
             <div class="batch-row-container">
                 <div class="batch-row">
                     <span class="row-num">${i+1}</span>
-                    <input type="text" id="sku-${i}" class="input-sku" oninput="handleRowInput(${i})">
+                    <input type="text" id="sku-${i}" class="input-sku" onchange="handleRowChange(${i})" onkeypress="handleEnter(event, ${i}, 'sku')">
                     <button class="btn-scan-row" onclick="startScannerForRow(${i})">${barcodeIcon}</button>
-                    <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="handleRowInput(${i})">
+                    <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" onchange="saveBatchData()" onkeypress="handleEnter(event, ${i}, 'qty')">
                     <button class="btn-delete-row" onclick="clearRow(${i})">✕</button>
                 </div>
                 <div id="error-${i}" class="error-msg">* מק"ט או ברקוד לא נמצא</div>
@@ -228,25 +209,46 @@
         container.innerHTML = html;
     }
 
-    function handleRowInput(i) {
+    // פונקציה חדשה לטיפול בלחיצת Enter
+    function handleEnter(event, i, fieldType) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // מונע ירידת שורה מיותרת
+            if (fieldType === 'sku') {
+                handleRowChange(i); // בודק תקינות
+                // אם תקין, עובר לכמות
+                const skuInput = document.getElementById(`sku-${i}`);
+                if (!skuInput.classList.contains('error') && skuInput.value.trim() !== '') {
+                    document.getElementById(`qty-${i}`).focus();
+                }
+            } else if (fieldType === 'qty') {
+                saveBatchData();
+                // עובר לשורה הבאה
+                if (i < ROWS_COUNT - 1) {
+                    document.getElementById(`sku-${i+1}`).focus();
+                }
+            }
+        }
+    }
+
+    // פונקציה שבודקת רק בסיום הקלדה (onchange)
+    function handleRowChange(i) {
         const skuInput = document.getElementById(`sku-${i}`);
+        const qtyInput = document.getElementById(`qty-${i}`);
         const errorMsg = document.getElementById(`error-${i}`);
         const code = skuInput.value.trim().toUpperCase();
         
-        // בדיקת תקינות
         if (code) {
             const item = priceMap.get(code);
             if (item) {
-                // תקין
                 skuInput.classList.remove('error');
                 errorMsg.classList.remove('visible');
+                // אם הכמות ריקה, שים 1
+                if (qtyInput.value === '') qtyInput.value = 1;
             } else {
-                // שגיאה
                 skuInput.classList.add('error');
                 errorMsg.classList.add('visible');
             }
         } else {
-            // שדה ריק - נקה שגיאות
             skuInput.classList.remove('error');
             errorMsg.classList.remove('visible');
         }
@@ -259,14 +261,10 @@
         const skuInput = document.getElementById(`sku-${i}`);
         const qtyInput = document.getElementById(`qty-${i}`);
         const errorMsg = document.getElementById(`error-${i}`);
-        
         skuInput.value = '';
         qtyInput.value = '';
-        
-        // נקה עיצוב שגיאה אם היה
         skuInput.classList.remove('error');
         errorMsg.classList.remove('visible');
-        
         saveBatchData();
         updateAllPreviews();
     }
@@ -292,19 +290,10 @@
     function handleScanResult(code) {
         const cleanCode = code.trim().toUpperCase();
         const skuInput = document.getElementById(`sku-${scanningRowIndex}`);
-        const qtyInput = document.getElementById(`qty-${scanningRowIndex}`);
+        skuInput.value = cleanCode;
         
-        if (skuInput) {
-            skuInput.value = cleanCode;
-            if (qtyInput.value === '') qtyInput.value = 1;
-            
-            // בדיקה אם המק"ט תקין כדי לעדכן סטטוס
-            const item = priceMap.get(cleanCode);
-            if (item) setStatus(`✅ שורה ${scanningRowIndex+1}: ${item.description}`, 'success');
-            else setStatus(`⚠️ שורה ${scanningRowIndex+1}: לא נמצא`, 'error');
-            
-            handleRowInput(scanningRowIndex); // מפעיל ולידציה ועדכון
-        }
+        // הפעלת הבדיקה מיד לאחר סריקה
+        handleRowChange(scanningRowIndex);
     }
 
     function updateAllPreviews() {
@@ -394,12 +383,9 @@
                 if (i < ROWS_COUNT) {
                     const skuInput = document.getElementById(`sku-${i}`);
                     const qtyInput = document.getElementById(`qty-${i}`);
-                    
                     skuInput.value = row.sku || '';
                     qtyInput.value = row.qty || '';
-                    
-                    // בדיקת שגיאות בנתונים משוחזרים
-                    if(row.sku) handleRowInput(i);
+                    if(row.sku) handleRowChange(i);
                 }
             });
             updateAllPreviews();
