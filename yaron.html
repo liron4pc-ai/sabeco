@@ -26,6 +26,8 @@
         /* כותרת */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px; height: 70px; }
         .header-title { font-size: 1.2rem; font-weight: 800; color: var(--text); text-align: center; line-height: 1.1; flex-grow: 1; }
+        
+        /* לוגואים */
         .logo-img { max-height: 55px; max-width: 80px; object-fit: contain; }
         .logo-fallback { font-weight: 900; font-size: 1rem; color: #ccc; }
         .icon-barcode { width: 24px; height: 24px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -48,11 +50,18 @@
         .input-qty { width: 50px; padding: 8px 2px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; text-align: center; flex-shrink: 0; }
         .row-num { font-size: 0.8rem; color: #888; width: 18px; flex-shrink: 0; text-align: center;}
 
-        /* תצוגה מקדימה */
+        /* תצוגה מקדימה משופרת */
         .preview-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
-        .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; justify-items: center; }
-        .preview-card { border: 1px solid #ddd; border-radius: 8px; padding: 5px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 160px; }
-        .preview-qty-badge { background: #e0e7ff; color: #3730a3; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; font-weight: bold; }
+        .preview-title { font-size: 1.1rem; font-weight: bold; color: #444; margin-bottom: 10px; text-align: center; }
+        .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; justify-items: center; }
+        
+        .preview-card { 
+            border: 1px solid #ddd; border-radius: 8px; padding: 8px; background: #fff; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            display: flex; flex-direction: column; align-items: center; 
+            width: 100%; max-width: 170px; /* מעט רחב יותר */
+        }
+        .preview-qty-badge { background: #e0e7ff; color: #3730a3; font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: bold; }
 
         /* מודאל */
         #scanner-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
@@ -62,71 +71,68 @@
         .success { background: #dcfce7 !important; color: #166534 !important; }
         .error { background: #fee2e2 !important; color: #b91c1c !important; }
 
-        /* === עיצוב המדבקה המתוקן === */
+        /* === עיצוב המדבקה (דינמי) === */
         .label { 
             background: white; 
             box-sizing: border-box; 
             display: flex; 
             flex-direction: column; 
-            justify-content: space-between; /* מפזר את התוכן: למעלה ולמטה */
+            justify-content: space-between; 
             position: relative; 
             overflow: hidden; 
         }
-        .preview-card .label { border: 1px solid #eee; }
         
-        /* חלק עליון: מק"ט ותיאור */
-        .label-top {
-            display: flex;
-            flex-direction: column;
+        /* התאמות ספציפיות לתצוגה המקדימה כדי שייראה טוב */
+        .preview-card .label { 
+            border: 1px solid #eee; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-
-        /* מק"ט: גודל רגיל, לא ענק */
+        
         .label-header { 
-            font-size: calc(9pt * var(--scale-factor)); 
-            font-weight: bold; 
+            font-size: calc(10pt * var(--scale-factor)); 
+            font-weight: 800; 
+            white-space: nowrap; 
             text-align: center; 
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             line-height: 1.1;
         }
         
-        /* תיאור: גודל רגיל, עד 3 שורות */
         .label-desc { 
-            font-size: calc(8pt * var(--scale-factor)); 
-            line-height: 1.15; 
-            font-weight: normal; 
+            font-size: calc(8.5pt * var(--scale-factor)); /* פונט טיפה קטן יותר כדי שייכנס יפה */
+            line-height: 1.2; 
+            font-weight: 600; 
             display: -webkit-box; 
             -webkit-line-clamp: 3; 
             -webkit-box-orient: vertical; 
             overflow: hidden; 
             text-align: right; 
+            flex-grow: 1;
+            padding: 0 1px;
         }
         
-        /* חלק תחתון: מחיר ופרטי יבואן */
-        .label-bottom {
-            display: flex;
-            flex-direction: column;
+        .label-footer { 
+            margin-top: 3px; 
+            display: flex; 
+            flex-direction: column; /* שינוי: מחיר ויבואן אחד מתחת לשני */
             align-items: center;
-            margin-top: 2px;
+            border-top: 1px solid #eee; 
+            padding-top: 3px;
         }
-
-        /* מחיר: מודגש, באמצע מעל היבואן */
+        
         .label-price { 
-            font-size: calc(12pt * var(--scale-factor)); 
+            font-size: calc(14pt * var(--scale-factor)); 
             font-weight: 900; 
             direction: ltr; 
             line-height: 1;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         
-        /* יבואן: דבוק למטה, קטן */
         .label-importer { 
-            font-size: calc(4.5pt * var(--scale-factor)); 
+            font-size: calc(5pt * var(--scale-factor)); 
             text-align: center; 
-            line-height: 1; 
-            color: #000;
+            line-height: 1.1; 
+            color: #333;
             width: 100%;
-            border-top: 1px solid #eee; /* קו הפרדה עדין מאוד מעל היבואן */
-            padding-top: 2px;
         }
 
         @media print {
@@ -144,11 +150,13 @@
 <div class="container">
     <!-- כותרת ממותגת עם תמונות -->
     <div class="app-header">
-        <img src="sabco.png" alt="SABCO" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+        <!-- לוגו ימין (סאבקו - תוקן שם הקובץ) -->
+        <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
         <div class="logo-fallback" style="display:none; color:#1e3a8a;">SABCO</div>
 
         <div class="header-title">הדפסת מדבקות</div>
 
+        <!-- לוגו שמאל (ACE) -->
         <img src="ace.png" alt="ACE" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
         <div class="logo-fallback" style="display:none; color:#dc2626;">ACE</div>
     </div>
@@ -287,9 +295,11 @@
         if (skuInput) {
             skuInput.value = cleanCode;
             if (qtyInput.value === '') qtyInput.value = 1;
+            
             const item = priceMap.get(cleanCode);
             if (item) setStatus(`✅ שורה ${scanningRowIndex+1}: ${item.description}`, 'success');
             else setStatus(`⚠️ שורה ${scanningRowIndex+1}: לא נמצא`, 'error');
+            
             handleRowInput(scanningRowIndex);
         }
     }
@@ -326,11 +336,10 @@
 
     function getLabelContent(item) {
         return `
-            <div class="label-top">
-                <div class="label-header">מק"ט: ${item.sku}</div>
-                <div class="label-desc">${item.description}</div>
-            </div>
-            <div class="label-bottom">
+            <div class="label-header">מק"ט: ${item.sku}</div>
+            <div class="label-desc">${item.description}</div>
+            
+            <div class="label-footer">
                 <div class="label-price">₪${item.price.toFixed(2)}</div>
                 <div class="label-importer">${IMPORTER_INFO}</div>
             </div>
