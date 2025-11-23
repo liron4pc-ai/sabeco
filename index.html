@@ -203,7 +203,7 @@
                     <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" onchange="saveBatchData()" onkeypress="handleEnter(event, ${i}, 'qty')">
                     <button class="btn-delete-row" onclick="clearRow(${i})">✕</button>
                 </div>
-                <div id="error-${i}" class="error-msg">* מק"ט או ברקוד לא נמצא</div>
+                <div id="error-${i}" class="error-msg">* המק"ט או הברקוד לא תקין</div>
             </div>`;
         }
         container.innerHTML = html;
@@ -433,3 +433,4 @@
 
 </body>
 </html>
+
