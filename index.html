@@ -14,9 +14,7 @@
             --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937;
             --border: #d1d5db; --danger: #dc2626; --success: #16a34a;
             --scan-btn: #f97316;
-            
-            /* פקטור קבוע לתצוגה במסך - תמיד נראה כמו 33 מ"מ */
-            --scale-factor: 1.1; 
+            --scale-factor: 1;
         }
 
         * { box-sizing: border-box; } 
@@ -42,19 +40,42 @@
         .btn-print { background: var(--primary); width: 100%; font-size: 1.2rem; padding: 12px; margin-top: 15px; box-shadow: 0 4px 6px rgba(37,99,235,0.3); position: sticky; bottom: 10px; z-index: 100; }
         .btn-clear { background: var(--danger); width: 100%; margin-top: 10px; font-size: 0.9rem; padding: 8px; }
         .btn-scan-row { background: var(--scan-btn); padding: 0; width: 40px; height: 40px; font-size: 1.2rem; flex-shrink: 0; border-radius: 8px; }
+        
+        /* כפתור מחיקת שורה (X) */
+        .btn-delete-row { 
+            background: #e5e7eb; 
+            color: #000; 
+            padding: 0; 
+            width: 30px; 
+            height: 30px; 
+            font-size: 1rem; 
+            flex-shrink: 0; 
+            border-radius: 6px; 
+            border: 1px solid #ccc;
+            margin-right: 5px; /* מרחק מהכמות */
+        }
 
         /* טבלה */
-        .batch-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .batch-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+        .batch-row-container { display: flex; flex-direction: column; width: 100%; }
         .batch-row { display: flex; gap: 5px; align-items: center; width: 100%; }
-        .input-sku { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; min-width: 0; }
+        
+        .input-sku { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; min-width: 0; transition: border-color 0.2s; }
+        .input-sku.error { border-color: var(--danger); background-color: #fef2f2; }
+        
         .input-qty { width: 50px; padding: 8px 2px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; text-align: center; flex-shrink: 0; }
         .row-num { font-size: 0.8rem; color: #888; width: 18px; flex-shrink: 0; text-align: center;}
+        
+        /* הודעת שגיאה מתחת לשורה */
+        .error-msg { color: var(--danger); font-size: 0.75rem; margin-top: 2px; margin-right: 25px; display: none; }
+        .error-msg.visible { display: block; }
 
         /* תצוגה מקדימה */
         .preview-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
+        .preview-title { font-size: 1.1rem; font-weight: bold; color: #444; margin-bottom: 10px; text-align: center; }
         .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; justify-items: center; }
         .preview-card { border: 1px solid #ddd; border-radius: 8px; padding: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 170px; }
-        .preview-qty-badge { background: #e0e7ff; color: #3730a3; font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: bold; }
+        .preview-qty-badge { background: #e0e7ff; color: #3730a3; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; font-weight: bold; }
 
         /* מודאל */
         #scanner-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
@@ -64,66 +85,16 @@
         .success { background: #dcfce7 !important; color: #166534 !important; }
         .error { background: #fee2e2 !important; color: #b91c1c !important; }
 
-        /* === עיצוב המדבקה (קבוע למסך) === */
-        .label { 
-            background: white; 
-            box-sizing: border-box; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between; 
-            position: relative; 
-            overflow: hidden; 
-        }
+        /* מדבקה */
+        .label { background: white; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
         .preview-card .label { border: 1px solid #eee; }
         
-        .label-header { 
-            font-size: calc(9pt * var(--scale-factor)); 
-            font-weight: 800; 
-            white-space: nowrap; 
-            text-align: center; 
-            margin-bottom: 3px;
-            line-height: 1.1;
-        }
-        
-        .label-desc { 
-            font-size: calc(8.5pt * var(--scale-factor)); 
-            line-height: 1.2; 
-            font-weight: 600; 
-            display: -webkit-box; 
-            -webkit-line-clamp: 3; 
-            -webkit-box-orient: vertical; 
-            overflow: hidden; 
-            text-align: right; 
-            flex-grow: 1;
-            padding: 0 1px;
-        }
-        
-        .label-footer { 
-            margin-top: 3px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-            border-top: none; /* הוסר הקו */
-            padding-top: 3px;
-        }
-        
-        .label-price { 
-            font-size: calc(14pt * var(--scale-factor)); 
-            font-weight: 900; 
-            direction: ltr; 
-            line-height: 1;
-            margin-bottom: 2px;
-        }
-        
-        .label-importer { 
-            font-size: calc(5pt * var(--scale-factor)); 
-            text-align: center; 
-            line-height: 1.1; 
-            color: #333;
-            width: 100%;
-        }
+        .label-header { font-size: calc(10pt * var(--scale-factor)); font-weight: 800; white-space: nowrap; text-align: center; margin-bottom: 3px; line-height: 1.1; }
+        .label-desc { font-size: calc(8.5pt * var(--scale-factor)); line-height: 1.2; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-align: right; flex-grow: 1; padding: 0 1px; }
+        .label-footer { margin-top: 3px; display: flex; flex-direction: column; align-items: center; border-top: none; padding-top: 3px; }
+        .label-price { font-size: calc(14pt * var(--scale-factor)); font-weight: 900; direction: ltr; line-height: 1; margin-bottom: 2px; }
+        .label-importer { font-size: calc(5pt * var(--scale-factor)); text-align: center; line-height: 1.1; color: #333; width: 100%; }
 
-        /* הגדרות הדפסה - כאן קורה הקסם של שינוי הגודל האמיתי */
         @media print {
             @page { margin: 0; } 
             body { margin: 0; padding: 0; background: none; }
@@ -138,13 +109,10 @@
 
 <div class="container">
     <div class="app-header">
-        <!-- לוגו ימין (סאבקו - תוקן ל-jpg) -->
-        <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+        <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.src='sabeco.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#1e3a8a;">SABCO</div>
-
         <div class="header-title">הדפסת מדבקות</div>
-
-        <img src="ace.png" alt="ACE" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+        <img src="ACE.png" alt="ACE" class="logo-img" onerror="this.src='ace.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#dc2626;">ACE</div>
     </div>
 
@@ -153,7 +121,7 @@
     <div class="size-controls">
         <div style="width: 48%">
             <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">רוחב:</label>
-            <select id="widthSelect" class="size-select" onchange="saveSettings()" style="width:100%">
+            <select id="widthSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
                 <option value="30">30 מ"מ</option>
                 <option value="33" selected>33 מ"מ</option>
                 <option value="40">40 מ"מ</option>
@@ -162,7 +130,7 @@
         </div>
         <div style="width: 48%">
             <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">גובה:</label>
-            <select id="heightSelect" class="size-select" onchange="saveSettings()" style="width:100%">
+            <select id="heightSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
                 <option value="30">30 מ"מ</option>
                 <option value="33" selected>33 מ"מ</option>
                 <option value="40">40 מ"מ</option>
@@ -215,11 +183,13 @@
         restoreBatchData();
     };
 
-    function saveSettings() {
+    function updateLabelSizeSettings() {
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
+        const minDim = Math.min(w, h);
+        const scale = minDim / 30; 
+        document.documentElement.style.setProperty('--scale-factor', scale);
         localStorage.setItem('labelSize', JSON.stringify({w, h}));
-        // לא משנה את ה-Scale Factor במסך, רק שומר להדפסה
         updateAllPreviews();
     }
 
@@ -230,7 +200,7 @@
             document.getElementById('widthSelect').value = w;
             document.getElementById('heightSelect').value = h;
         }
-        updateAllPreviews();
+        updateLabelSizeSettings();
     }
 
     function generateRows() {
@@ -239,17 +209,64 @@
         
         let html = `<div style="display:flex; font-size:0.8rem; color:#666; margin-bottom:2px;">
             <span style="width:20px"></span><span style="flex:1; text-align:right; margin-right:5px;">מק"ט / ברקוד</span>
-            <span style="width:40px"></span><span style="width:50px; text-align:center;">כמות</span></div>`;
+            <span style="width:40px"></span><span style="width:50px; text-align:center;">כמות</span>
+            <span style="width:30px"></span></div>`; // מרווח לכפתור מחיקה
+            
         for (let i = 0; i < ROWS_COUNT; i++) {
-            html += `<div class="batch-row"><span class="row-num">${i+1}</span>
-                <input type="text" id="sku-${i}" class="input-sku" oninput="handleRowInput(${i})">
-                <button class="btn-scan-row" onclick="startScannerForRow(${i})">${barcodeIcon}</button>
-                <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="handleRowInput(${i})"></div>`;
+            html += `
+            <div class="batch-row-container">
+                <div class="batch-row">
+                    <span class="row-num">${i+1}</span>
+                    <input type="text" id="sku-${i}" class="input-sku" oninput="handleRowInput(${i})">
+                    <button class="btn-scan-row" onclick="startScannerForRow(${i})">${barcodeIcon}</button>
+                    <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="handleRowInput(${i})">
+                    <button class="btn-delete-row" onclick="clearRow(${i})">✕</button>
+                </div>
+                <div id="error-${i}" class="error-msg">* מק"ט או ברקוד לא נמצא</div>
+            </div>`;
         }
         container.innerHTML = html;
     }
 
     function handleRowInput(i) {
+        const skuInput = document.getElementById(`sku-${i}`);
+        const errorMsg = document.getElementById(`error-${i}`);
+        const code = skuInput.value.trim().toUpperCase();
+        
+        // בדיקת תקינות
+        if (code) {
+            const item = priceMap.get(code);
+            if (item) {
+                // תקין
+                skuInput.classList.remove('error');
+                errorMsg.classList.remove('visible');
+            } else {
+                // שגיאה
+                skuInput.classList.add('error');
+                errorMsg.classList.add('visible');
+            }
+        } else {
+            // שדה ריק - נקה שגיאות
+            skuInput.classList.remove('error');
+            errorMsg.classList.remove('visible');
+        }
+
+        saveBatchData();
+        updateAllPreviews();
+    }
+
+    function clearRow(i) {
+        const skuInput = document.getElementById(`sku-${i}`);
+        const qtyInput = document.getElementById(`qty-${i}`);
+        const errorMsg = document.getElementById(`error-${i}`);
+        
+        skuInput.value = '';
+        qtyInput.value = '';
+        
+        // נקה עיצוב שגיאה אם היה
+        skuInput.classList.remove('error');
+        errorMsg.classList.remove('visible');
+        
         saveBatchData();
         updateAllPreviews();
     }
@@ -281,19 +298,19 @@
             skuInput.value = cleanCode;
             if (qtyInput.value === '') qtyInput.value = 1;
             
+            // בדיקה אם המק"ט תקין כדי לעדכן סטטוס
             const item = priceMap.get(cleanCode);
             if (item) setStatus(`✅ שורה ${scanningRowIndex+1}: ${item.description}`, 'success');
             else setStatus(`⚠️ שורה ${scanningRowIndex+1}: לא נמצא`, 'error');
             
-            handleRowInput(scanningRowIndex);
+            handleRowInput(scanningRowIndex); // מפעיל ולידציה ועדכון
         }
     }
 
     function updateAllPreviews() {
         const previewGrid = document.getElementById('previewGrid');
-        // בתצוגה במסך - אנחנו מקבעים את הגודל ל-33x33 כדי שייראה תמיד טוב
-        // בהדפסה (printBatch) נשתמש בגודל האמיתי שנבחר
-        
+        const w = document.getElementById('widthSelect').value;
+        const h = document.getElementById('heightSelect').value;
         let html = '';
         let hasItems = false;
 
@@ -309,14 +326,13 @@
                     html += `
                     <div class="preview-card">
                         <div class="preview-qty-badge">כמות: ${qty}</div>
-                        <div class="label" style="width:33mm; height:33mm;">
+                        <div class="label" style="width:${w}mm; height:${h}mm;">
                             ${getLabelContent(item)}
                         </div>
                     </div>`;
                 }
             }
         }
-        
         if (!hasItems) previewGrid.innerHTML = '<span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>';
         else previewGrid.innerHTML = html;
     }
@@ -325,7 +341,6 @@
         return `
             <div class="label-header">מק"ט: ${item.sku}</div>
             <div class="label-desc">${item.description}</div>
-            
             <div class="label-footer">
                 <div class="label-price">₪${item.price.toFixed(2)}</div>
                 <div class="label-importer">${IMPORTER_INFO}</div>
@@ -334,20 +349,10 @@
     }
 
     function printBatch() {
-        // כאן אנחנו לוקחים את הגודל האמיתי שבחר המשתמש
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
-        
-        // חישוב פקטור הגדלה להדפסה בלבד (אם הגודל הוא 50, הפונט יגדל)
-        const minDim = Math.min(w, h);
-        const printScale = minDim / 30; // יחסית ל-30 מ"מ
-
         document.getElementById('dynamicPrintStyle').innerHTML = 
-            `@media print { 
-                @page { size: ${w}mm ${h}mm; margin: 0; } 
-                body { --scale-factor: ${printScale}; } /* עדכון גודל הפונט רק להדפסה */
-                .label { width: ${w}mm !important; height: ${h}mm !important; } 
-            }`;
+            `@media print { @page { size: ${w}mm ${h}mm; margin: 0; } .label { width: ${w}mm !important; height: ${h}mm !important; } }`;
 
         let html = '';
         let hasItems = false;
@@ -387,8 +392,14 @@
             const data = JSON.parse(saved);
             data.forEach((row, i) => {
                 if (i < ROWS_COUNT) {
-                    document.getElementById(`sku-${i}`).value = row.sku || '';
-                    document.getElementById(`qty-${i}`).value = row.qty || '';
+                    const skuInput = document.getElementById(`sku-${i}`);
+                    const qtyInput = document.getElementById(`qty-${i}`);
+                    
+                    skuInput.value = row.sku || '';
+                    qtyInput.value = row.qty || '';
+                    
+                    // בדיקת שגיאות בנתונים משוחזרים
+                    if(row.sku) handleRowInput(i);
                 }
             });
             updateAllPreviews();
@@ -398,8 +409,7 @@
     function clearAll() {
         if(confirm("האם לנקות את כל השורות?")) {
             for (let i = 0; i < ROWS_COUNT; i++) {
-                document.getElementById(`sku-${i}`).value = '';
-                document.getElementById(`qty-${i}`).value = '';
+                clearRow(i);
             }
             saveBatchData();
             updateAllPreviews();
