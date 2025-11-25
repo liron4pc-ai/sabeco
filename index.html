@@ -89,9 +89,12 @@
 
 <div class="container">
     <div class="app-header">
+        <!-- לוגו ימין (סאבקו - תוקן ל-jpg) -->
         <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.src='sabeco.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#1e3a8a;">SABCO</div>
+
         <div class="header-title">הדפסת מדבקות</div>
+
         <img src="ACE.png" alt="ACE" class="logo-img" onerror="this.src='ace.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#dc2626;">ACE</div>
     </div>
@@ -193,36 +196,33 @@
             <span style="width:30px"></span></div>`;
             
         for (let i = 0; i < ROWS_COUNT; i++) {
-            // שינוי: onchange במקום oninput למניעת קפיצות בזמן הקלדה
             html += `
             <div class="batch-row-container">
                 <div class="batch-row">
                     <span class="row-num">${i+1}</span>
                     <input type="text" id="sku-${i}" class="input-sku" onchange="handleRowChange(${i})" onkeypress="handleEnter(event, ${i}, 'sku')">
                     <button class="btn-scan-row" onclick="startScannerForRow(${i})">${barcodeIcon}</button>
-                    <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" onchange="saveBatchData()" onkeypress="handleEnter(event, ${i}, 'qty')">
+                    <!-- הוספתי onchange="handleQtyChange(${i})" כדי לרענן תצוגה גם בשינוי כמות -->
+                    <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" onchange="handleQtyChange(${i})" onkeypress="handleEnter(event, ${i}, 'qty')">
                     <button class="btn-delete-row" onclick="clearRow(${i})">✕</button>
                 </div>
-                <div id="error-${i}" class="error-msg">* המק"ט או הברקוד לא תקין</div>
+                <div id="error-${i}" class="error-msg">* מק"ט או ברקוד לא נמצא</div>
             </div>`;
         }
         container.innerHTML = html;
     }
 
-    // פונקציה חדשה לטיפול בלחיצת Enter
     function handleEnter(event, i, fieldType) {
         if (event.key === 'Enter') {
-            event.preventDefault(); // מונע ירידת שורה מיותרת
+            event.preventDefault(); 
             if (fieldType === 'sku') {
-                handleRowChange(i); // בודק תקינות
-                // אם תקין, עובר לכמות
+                handleRowChange(i); 
                 const skuInput = document.getElementById(`sku-${i}`);
                 if (!skuInput.classList.contains('error') && skuInput.value.trim() !== '') {
                     document.getElementById(`qty-${i}`).focus();
                 }
             } else if (fieldType === 'qty') {
-                saveBatchData();
-                // עובר לשורה הבאה
+                handleQtyChange(i); // עדכון גם באנטר על כמות
                 if (i < ROWS_COUNT - 1) {
                     document.getElementById(`sku-${i+1}`).focus();
                 }
@@ -230,7 +230,12 @@
         }
     }
 
-    // פונקציה שבודקת רק בסיום הקלדה (onchange)
+    // פונקציה חדשה לטיפול בשינוי כמות
+    function handleQtyChange(i) {
+        saveBatchData();
+        updateAllPreviews();
+    }
+
     function handleRowChange(i) {
         const skuInput = document.getElementById(`sku-${i}`);
         const qtyInput = document.getElementById(`qty-${i}`);
@@ -242,7 +247,6 @@
             if (item) {
                 skuInput.classList.remove('error');
                 errorMsg.classList.remove('visible');
-                // אם הכמות ריקה, שים 1
                 if (qtyInput.value === '') qtyInput.value = 1;
             } else {
                 skuInput.classList.add('error');
@@ -292,7 +296,6 @@
         const skuInput = document.getElementById(`sku-${scanningRowIndex}`);
         skuInput.value = cleanCode;
         
-        // הפעלת הבדיקה מיד לאחר סריקה
         handleRowChange(scanningRowIndex);
     }
 
@@ -433,4 +436,3 @@
 
 </body>
 </html>
-
