@@ -186,13 +186,10 @@
         let brandName = DEFAULT_BRAND;
         
         if (item.brand) {
-            // המרה לאותיות קטנות כדי למנוע בעיות רגישות לאותיות
             const brandKey = item.brand.toLowerCase();
             if (BRAND_TRANSLATIONS[brandKey]) {
                 brandName = BRAND_TRANSLATIONS[brandKey];
             } else {
-                // אם המותג לא במילון, נשתמש בשם כפי שהוא מופיע ב-JSON
-                // או נשאיר טרופר אם אתה מעדיף
                 brandName = item.brand; 
             }
         }
@@ -230,7 +227,7 @@
             <span style="width:30px"></span></div>`;
             
         for (let i = 0; i < ROWS_COUNT; i++) {
-            // התיקון כאן: הוספת oninput="handleQtyInput(${i})"
+            // התיקון כאן: הוספת oninput="handleQtyInput(${i})" כדי לעדכן בזמן אמת
             html += `
             <div class="batch-row-container">
                 <div class="batch-row">
@@ -264,7 +261,7 @@
         }
     }
 
-    // פונקציה חדשה לעדכון מיידי של הכמות
+    // פונקציה לעדכון כמות בזמן אמת
     function handleQtyInput(i) {
         saveBatchData();
         updateAllPreviews();
@@ -363,7 +360,7 @@
     }
 
     function getLabelContent(item) {
-        const footerText = getFooterText(item); // שימוש בפונקציה הדינמית
+        const footerText = getFooterText(item); 
         
         return `
             <div class="label-header">מק"ט: ${item.sku}</div>
@@ -390,7 +387,7 @@
         tspl += `GAP 2 mm,0\n`;
         tspl += `DIRECTION 1\n`;
         tspl += `CLS\n`;
-        tspl += `CODEPAGE 1255\n`; 
+        tspl += `CODEPAGE 1255\n`; // עברית
 
         for (let i = 0; i < ROWS_COUNT; i++) {
             const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
