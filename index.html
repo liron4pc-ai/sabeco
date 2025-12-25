@@ -6,37 +6,57 @@
     <title>מדפסת מדבקות שטח (סאבקו)</title>
     
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <style>
-        /* --- עיצוב --- */
-        :root { --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --border: #d1d5db; --danger: #dc2626; --success: #16a34a; --scan-btn: #f97316; --scale-factor: 1.1; }
+        /* --- עיצוב כללי --- */
+        :root {
+            --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937;
+            --border: #d1d5db; --danger: #dc2626; --success: #16a34a;
+            --scan-btn: #f97316;
+            --scale-factor: 1;
+        }
+
         * { box-sizing: border-box; } 
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 8px; direction: rtl; padding-bottom: 80px; }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 8px; direction: rtl; padding-bottom: 60px; }
+        
         .container { max-width: 800px; margin: 0 auto; background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
+        /* כותרת */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px; height: 70px; }
         .header-title { font-size: 1.2rem; font-weight: 800; color: var(--text); text-align: center; line-height: 1.1; flex-grow: 1; }
         .logo-img { max-height: 55px; max-width: 80px; object-fit: contain; }
+        .logo-fallback { font-weight: 900; font-size: 1rem; color: #ccc; }
+        .icon-barcode { width: 24px; height: 24px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         
-        .size-controls { display: flex; gap: 8px; background: #eff6ff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe; justify-content: space-between; }
+        /* גדלים וכפתורים */
+        .size-controls { display: flex; gap: 8px; background: #eff6ff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe; align-items: center; justify-content: space-between; }
         .size-select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; width: 48%; font-size: 0.9rem; }
         
-        button { border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; padding: 10px; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        button { border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; padding: 10px; font-size: 1rem; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        button:active { opacity: 0.8; }
         .btn-file { background: #6b7280; width: 100%; margin-bottom: 10px; font-size: 0.9rem; padding: 8px; }
-        .btn-print { background: var(--primary); width: 100%; font-size: 1.2rem; padding: 15px; margin-top: 15px; position: sticky; bottom: 10px; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .btn-print { background: var(--primary); width: 100%; font-size: 1.2rem; padding: 12px; margin-top: 15px; box-shadow: 0 4px 6px rgba(37,99,235,0.3); position: sticky; bottom: 10px; z-index: 100; }
         .btn-clear { background: var(--danger); width: 100%; margin-top: 10px; font-size: 0.9rem; padding: 8px; }
         .btn-scan-row { background: var(--scan-btn); padding: 0; width: 40px; height: 40px; font-size: 1.2rem; flex-shrink: 0; border-radius: 8px; }
         .btn-delete-row { background: #e5e7eb; color: #000; padding: 0; width: 30px; height: 30px; font-size: 1rem; flex-shrink: 0; border-radius: 6px; border: 1px solid #ccc; margin-right: 5px; }
 
+        /* טבלה */
         .batch-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+        .batch-row-container { display: flex; flex-direction: column; width: 100%; }
         .batch-row { display: flex; gap: 5px; align-items: center; width: 100%; }
-        .input-sku { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; min-width: 0; }
+        
+        .input-sku { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; min-width: 0; transition: border-color 0.2s; }
         .input-sku.error { border-color: var(--danger); background-color: #fef2f2; }
+        
         .input-qty { width: 50px; padding: 8px 2px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; text-align: center; flex-shrink: 0; }
         .row-num { font-size: 0.8rem; color: #888; width: 18px; flex-shrink: 0; text-align: center;}
         
-        .preview-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; margin-bottom: 60px; }
+        .error-msg { color: var(--danger); font-size: 0.75rem; margin-top: 2px; margin-right: 25px; display: none; }
+        .error-msg.visible { display: block; }
+
+        /* תצוגה מקדימה */
+        .preview-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
         .preview-title { font-size: 1.1rem; font-weight: bold; color: #444; margin-bottom: 10px; text-align: center; }
         .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; justify-items: center; }
         .preview-card { border: 1px solid #ddd; border-radius: 8px; padding: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 170px; }
@@ -46,12 +66,11 @@
         #scanner-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
         #reader { width: 100%; max-width: 500px; background: black; }
         .close-scan { background: var(--danger); width: auto; margin-top: 20px; padding: 10px 30px; font-size: 1.2rem; }
-        
         #statusMessage { padding: 8px; text-align: center; background: #e0f2fe; border-radius: 6px; font-size: 0.9rem; color: #0369a1; margin-bottom: 10px; }
         .success { background: #dcfce7 !important; color: #166534 !important; }
         .error { background: #fee2e2 !important; color: #b91c1c !important; }
 
-        /* === עיצוב המדבקה === */
+        /* מדבקה */
         .label { background: white; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
         .preview-card .label { border: 1px solid #eee; }
         
@@ -59,17 +78,16 @@
         .label-desc { font-size: calc(8.5pt * var(--scale-factor)); line-height: 1.2; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-align: right; flex-grow: 1; padding: 0 1px; }
         .label-footer { margin-top: 3px; display: flex; flex-direction: column; align-items: center; border-top: none; padding-top: 3px; }
         .label-price { font-size: calc(14pt * var(--scale-factor)); font-weight: 900; direction: ltr; line-height: 1; margin-bottom: 2px; }
-        
-        /* תוקן: פרטי יבואן מלאים */
-        .label-importer { font-size: calc(4.5pt * var(--scale-factor)); text-align: center; line-height: 1.1; color: #000; width: 100%; white-space: nowrap; font-weight: bold; }
-        .label-address { font-size: calc(4pt * var(--scale-factor)); text-align: center; line-height: 1; color: #333; width: 100%; white-space: nowrap; }
+        .label-importer { font-size: calc(5pt * var(--scale-factor)); text-align: center; line-height: 1.1; color: #333; width: 100%; }
 
-        /* מודאל תמונה להדפסה */
-        #print-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; }
-        #print-image-container { max-width: 90%; max-height: 80%; overflow: auto; margin-bottom: 20px; border: 2px solid white; }
-        .print-instruction { color: white; text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
-
-        #hidden-render-area { position: absolute; top: -9999px; left: -9999px; background: white; }
+        @media print {
+            @page { margin: 0; } 
+            body { margin: 0; padding: 0; background: none; }
+            .container, .size-controls, #statusMessage, #scanner-modal { display: none !important; }
+            #printArea { display: block !important; position: absolute; left: 0; top: 0; }
+            .label { border: none !important; page-break-after: always; margin: 0; padding: 1mm; }
+            .label:last-child { page-break-after: auto; }
+        }
     </style>
 </head>
 <body>
@@ -78,7 +96,9 @@
     <div class="app-header">
         <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.src='sabeco.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#1e3a8a;">SABCO</div>
+
         <div class="header-title">הדפסת מדבקות</div>
+
         <img src="ACE.png" alt="ACE" class="logo-img" onerror="this.src='ace.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#dc2626;">ACE</div>
     </div>
@@ -87,12 +107,22 @@
 
     <div class="size-controls">
         <div style="width: 48%">
-            <label style="font-size: 0.8rem; display:block;">רוחב:</label>
-            <select id="widthSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%"><option value="30">30 מ"מ</option><option value="33" selected>33 מ"מ</option><option value="40">40 מ"מ</option><option value="50">50 מ"מ</option></select>
+            <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">רוחב:</label>
+            <select id="widthSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
+                <option value="30">30 מ"מ</option>
+                <option value="33" selected>33 מ"מ</option>
+                <option value="40">40 מ"מ</option>
+                <option value="50">50 מ"מ</option>
+            </select>
         </div>
         <div style="width: 48%">
-            <label style="font-size: 0.8rem; display:block;">גובה:</label>
-            <select id="heightSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%"><option value="30">30 מ"מ</option><option value="33" selected>33 מ"מ</option><option value="40">40 מ"מ</option><option value="50">50 מ"מ</option></select>
+            <label style="font-size: 0.8rem; display:block; margin-bottom:2px;">גובה:</label>
+            <select id="heightSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
+                <option value="30">30 מ"מ</option>
+                <option value="33" selected>33 מ"מ</option>
+                <option value="40">40 מ"מ</option>
+                <option value="50">50 מ"מ</option>
+            </select>
         </div>
     </div>
 
@@ -102,14 +132,18 @@
     <div id="batchContainer" class="batch-grid"></div>
 
     <div class="preview-section">
-        <div class="preview-title" style="text-align: center;">תצוגה מקדימה:</div>
-        <div id="previewGrid" class="preview-grid"></div>
+        <div class="preview-title" style="text-align: center;">תצוגה מקדימה להדפסה:</div>
+        <div id="previewGrid" class="preview-grid">
+            <span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>
+        </div>
     </div>
 
-    <button class="btn-print" onclick="generateImage()">🖼️ הכן תמונה להדפסה</button>
+    <button class="btn-print" onclick="printViaTSPL()">🖨️ הדפס הכל (TSPL)</button>
     <button class="btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
 
-    <div style="text-align:center; margin-top:20px; font-size:0.7rem; color:#888;">פותח ע"י <b>לירון אופק</b> ⚡</div>
+    <div style="text-align:center; margin-top:20px; font-size:0.7rem; color:#888;">
+        פותח ע"י <b>לירון אופק</b> ⚡
+    </div>
 </div>
 
 <div id="scanner-modal">
@@ -118,24 +152,22 @@
     <button class="close-scan" onclick="stopScanner()">ביטול</button>
 </div>
 
-<!-- מודאל הצגת תמונה להדפסה -->
-<div id="print-modal">
-    <div class="print-instruction">לחץ לחיצה ארוכה על התמונה -> שתף -> RawBT/NokoPrint</div>
-    <div id="print-image-container"></div>
-    <button class="close-scan" onclick="document.getElementById('print-modal').style.display='none'">סגור</button>
-</div>
-
-<div id="hidden-render-area"></div>
+<div id="printArea" style="display:none;"></div>
+<style id="dynamicPrintStyle"></style>
 
 <script>
     let priceMap = new Map();
     const ROWS_COUNT = 12;
     
-    // תוקן: פרטי יבואן מלאים
-    const IMPORTER_NAME = "יבואן: סאבקו אספקה טכנית בע\"מ";
-    const IMPORTER_ADDR = "כתובת: חוצות היוצר 13 אשקלון";
-    const BRAND_TRANSLATIONS = { "truper": "טרופר", "stanley": "סטנלי", "ingco": "אינגקו", "tactix": "טקטיקס" };
-    const DEFAULT_BRAND = "טרופר";
+    // מילון מותגים - אם תרצה להוסיף עוד, פשוט תוסיף שורה כאן
+    const BRAND_TRANSLATIONS = {
+        "truper": "טרופר",
+        "stanley": "סטנלי",
+        "ingco": "אינגקו",
+        "tactix": "טקטיקס"
+    };
+    
+    const DEFAULT_BRAND = "טרופר"; 
     
     let html5QrCode = null;
     let scanningRowIndex = null;
@@ -148,82 +180,22 @@
         restoreBatchData();
     };
 
+    // --- קבלת שם מותג בעברית ---
     function getFooterText(item) {
         let brandName = DEFAULT_BRAND;
+        
         if (item.brand) {
-            const key = item.brand.toLowerCase();
-            brandName = BRAND_TRANSLATIONS[key] || item.brand;
+            const brandKey = item.brand.toLowerCase();
+            if (BRAND_TRANSLATIONS[brandKey]) {
+                brandName = BRAND_TRANSLATIONS[brandKey];
+            } else {
+                brandName = item.brand; 
+            }
         }
+        
         return `יצרן: ${brandName} | ארץ ייצור: סין`;
     }
 
-    // --- יצירת תמונה והצגתה (פתרון להדפסה) ---
-    function generateImage() {
-        const w = document.getElementById('widthSelect').value;
-        const h = document.getElementById('heightSelect').value;
-        const renderArea = document.getElementById('hidden-render-area');
-        
-        let totalQty = 0;
-        let htmlContent = `<div style="background:white; width:${w}mm; display:flex; flex-direction:column;">`;
-
-        for (let i = 0; i < ROWS_COUNT; i++) {
-            const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
-            let qtyVal = document.getElementById(`qty-${i}`).value;
-            const qty = (qtyVal === '' && sku !== '') ? 1 : parseInt(qtyVal);
-
-            if (sku && qty > 0) {
-                const item = priceMap.get(sku);
-                if (item) {
-                    totalQty += qty;
-                    for (let k = 0; k < qty; k++) {
-                        htmlContent += `
-                        <div style="width:${w}mm; height:${h}mm; box-sizing:border-box; padding:1mm; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:sans-serif; background:white; border-bottom:1px dashed #ccc;">
-                            ${getLabelContent(item)}
-                        </div>`;
-                    }
-                }
-            }
-        }
-        htmlContent += `</div>`;
-
-        if (totalQty === 0) { alert("אין פריטים להדפסה"); return; }
-        
-        renderArea.innerHTML = htmlContent;
-        setStatus('מייצר תמונה...', 'success');
-
-        html2canvas(renderArea.firstChild, { scale: 3, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
-            const imgUrl = canvas.toDataURL('image/png');
-            
-            // הצגת התמונה במודאל לשיתוף
-            const imgElement = document.createElement('img');
-            imgElement.src = imgUrl;
-            imgElement.style.width = '100%';
-            
-            const container = document.getElementById('print-image-container');
-            container.innerHTML = '';
-            container.appendChild(imgElement);
-            
-            document.getElementById('print-modal').style.display = 'flex';
-            setStatus('✅ התמונה מוכנה! שתף להדפסה', 'success');
-        }).catch(err => {
-            console.error(err);
-            setStatus('שגיאה ביצירת תמונה', 'error');
-        });
-    }
-
-    function getLabelContent(item) {
-        const footerText = getFooterText(item); 
-        return `
-            <div class="label-header">מק"ט: ${item.sku}</div>
-            <div class="label-desc">${item.description}</div>
-            <div class="label-footer">
-                <div class="label-price">₪${item.price.toFixed(2)}</div>
-                <div class="label-importer">${IMPORTER_NAME}<br>${IMPORTER_ADDR}<br>${footerText}</div>
-            </div>
-        `;
-    }
-
-    // --- שאר הפונקציות (ללא שינוי מהותי) ---
     function updateLabelSizeSettings() {
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
@@ -233,7 +205,7 @@
         localStorage.setItem('labelSize', JSON.stringify({w, h}));
         updateAllPreviews();
     }
-    
+
     function loadSettings() {
         const saved = localStorage.getItem('labelSize');
         if (saved) {
@@ -247,15 +219,25 @@
     function generateRows() {
         const container = document.getElementById('batchContainer');
         const barcodeIcon = `<svg class="icon-barcode" viewBox="0 0 24 24" style="width:24px; height:24px; stroke:white; fill:none; stroke-width:2;"><path d="M4 6v12M8 6v12M12 6v12M16 6v12M20 6v12" /></svg>`;
-        let html = `<div style="display:flex; font-size:0.8rem; color:#666; margin-bottom:2px;"><span style="width:20px"></span><span style="flex:1; text-align:right; margin-right:5px;">מק"ט</span><span style="width:40px"></span><span style="width:50px; text-align:center;">כמות</span><span style="width:30px"></span></div>`;
+        
+        let html = `<div style="display:flex; font-size:0.8rem; color:#666; margin-bottom:2px;">
+            <span style="width:20px"></span><span style="flex:1; text-align:right; margin-right:5px;">מק"ט / ברקוד</span>
+            <span style="width:40px"></span><span style="width:50px; text-align:center;">כמות</span>
+            <span style="width:30px"></span></div>`;
+            
         for (let i = 0; i < ROWS_COUNT; i++) {
-            html += `<div class="batch-row" style="margin-bottom:8px; display:flex; align-items:center; gap:5px;">
-                <span class="row-num">${i+1}</span>
-                <input type="text" id="sku-${i}" class="input-sku" onchange="handleRowChange(${i})" onkeypress="handleEnter(event, ${i}, 'sku')">
-                <button class="btn-scan-row" onclick="startScannerForRow(${i})">${barcodeIcon}</button>
-                <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="handleQtyInput(${i})" onchange="saveBatchData()" onkeypress="handleEnter(event, ${i}, 'qty')">
-                <button class="btn-delete-row" onclick="clearRow(${i})">✕</button>
-            </div><div id="error-${i}" class="error-msg">* לא נמצא</div>`;
+            // התיקון הקריטי: הוספתי oninput="handleQtyInput(${i})" לשדה הכמות
+            html += `
+            <div class="batch-row-container">
+                <div class="batch-row">
+                    <span class="row-num">${i+1}</span>
+                    <input type="text" id="sku-${i}" class="input-sku" onchange="handleRowChange(${i})" onkeypress="handleEnter(event, ${i}, 'sku')">
+                    <button class="btn-scan-row" onclick="startScannerForRow(${i})">${barcodeIcon}</button>
+                    <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="handleQtyInput(${i})" onchange="saveBatchData()" onkeypress="handleEnter(event, ${i}, 'qty')">
+                    <button class="btn-delete-row" onclick="clearRow(${i})">✕</button>
+                </div>
+                <div id="error-${i}" class="error-msg">* מק"ט או ברקוד לא נמצא</div>
+            </div>`;
         }
         container.innerHTML = html;
     }
@@ -271,12 +253,18 @@
                 }
             } else if (fieldType === 'qty') {
                 handleQtyInput(i);
-                if (i < ROWS_COUNT - 1) { document.getElementById(`sku-${i+1}`).focus(); }
+                if (i < ROWS_COUNT - 1) {
+                    document.getElementById(`sku-${i+1}`).focus();
+                }
             }
         }
     }
 
-    function handleQtyInput(i) { saveBatchData(); updateAllPreviews(); }
+    // פונקציה לעדכון כמות בזמן אמת
+    function handleQtyInput(i) {
+        saveBatchData();
+        updateAllPreviews();
+    }
 
     function handleRowChange(i) {
         const skuInput = document.getElementById(`sku-${i}`);
@@ -298,15 +286,19 @@
             skuInput.classList.remove('error');
             errorMsg.classList.remove('visible');
         }
+
         saveBatchData();
         updateAllPreviews();
     }
 
     function clearRow(i) {
-        document.getElementById(`sku-${i}`).value = '';
-        document.getElementById(`qty-${i}`).value = '';
-        document.getElementById(`sku-${i}`).classList.remove('error');
-        document.getElementById(`error-${i}`).classList.remove('visible');
+        const skuInput = document.getElementById(`sku-${i}`);
+        const qtyInput = document.getElementById(`qty-${i}`);
+        const errorMsg = document.getElementById(`error-${i}`);
+        skuInput.value = '';
+        qtyInput.value = '';
+        skuInput.classList.remove('error');
+        errorMsg.classList.remove('visible');
         saveBatchData();
         updateAllPreviews();
     }
@@ -318,7 +310,10 @@
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
             (decodedText) => { stopScanner(); handleScanResult(decodedText); },
             (errorMessage) => {}
-        ).catch(err => { alert("המצלמה לא נפתחה. וודא HTTPS."); stopScanner(); });
+        ).catch(err => {
+            alert("המצלמה לא נפתחה. וודא שאתה ב-HTTPS.");
+            stopScanner();
+        });
     }
 
     function stopScanner() {
@@ -328,7 +323,8 @@
 
     function handleScanResult(code) {
         const cleanCode = code.trim().toUpperCase();
-        document.getElementById(`sku-${scanningRowIndex}`).value = cleanCode;
+        const skuInput = document.getElementById(`sku-${scanningRowIndex}`);
+        skuInput.value = cleanCode;
         handleRowChange(scanningRowIndex);
     }
 
@@ -348,14 +344,91 @@
                 const item = priceMap.get(sku);
                 if (item) {
                     hasItems = true;
-                    html += `<div class="preview-card">
+                    html += `
+                    <div class="preview-card">
                         <div class="preview-qty-badge">כמות: ${qty}</div>
-                        <div class="label" style="width:${w}mm; height:${h}mm;">${getLabelContent(item)}</div>
+                        <div class="label" style="width:${w}mm; height:${h}mm;">
+                            ${getLabelContent(item)}
+                        </div>
                     </div>`;
                 }
             }
         }
-        previewGrid.innerHTML = hasItems ? html : '<span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>';
+        if (!hasItems) previewGrid.innerHTML = '<span style="color:#999; font-size:0.9rem;">המדבקות יופיעו כאן...</span>';
+        else previewGrid.innerHTML = html;
+    }
+
+    function getLabelContent(item) {
+        const footerText = getFooterText(item); 
+        
+        return `
+            <div class="label-header">מק"ט: ${item.sku}</div>
+            <div class="label-desc">${item.description}</div>
+            <div class="label-footer">
+                <div class="label-price">₪${item.price.toFixed(2)}</div>
+                <div class="label-importer">${footerText}</div>
+            </div>
+        `;
+    }
+
+    // --- הדפסה ישירה ב-TSPL עם מותג ---
+    function printViaTSPL() {
+        const w = parseInt(document.getElementById('widthSelect').value);
+        const h = parseInt(document.getElementById('heightSelect').value);
+        const dotsPerMm = 8;
+        const labelWidthDots = w * dotsPerMm;
+        const labelHeightDots = h * dotsPerMm;
+        
+        let tspl = "";
+        let totalQty = 0;
+
+        tspl += `SIZE ${w} mm,${h} mm\n`;
+        tspl += `GAP 2 mm,0\n`;
+        tspl += `DIRECTION 1\n`;
+        tspl += `CLS\n`;
+        tspl += `CODEPAGE 1255\n`; // עברית
+
+        for (let i = 0; i < ROWS_COUNT; i++) {
+            const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
+            let qtyVal = document.getElementById(`qty-${i}`).value;
+            const qty = (qtyVal === '' && sku !== '') ? 1 : parseInt(qtyVal);
+
+            if (sku && qty > 0) {
+                const item = priceMap.get(sku);
+                if (item) {
+                    totalQty += qty;
+                    // קבלת שם מותג
+                    let brandName = "טרופר"; // ברירת מחדל
+                    if (item.brand && BRAND_TRANSLATIONS[item.brand.toLowerCase()]) {
+                        brandName = BRAND_TRANSLATIONS[item.brand.toLowerCase()];
+                    } else if (item.brand) {
+                         brandName = item.brand; // אם לא במילון, מדפיס כמו ב-JSON
+                    }
+
+                    tspl += `CLS\n`;
+                    // מק"ט
+                    tspl += `TEXT ${labelWidthDots/2},10,"3",0,1,1,2,"${item.sku}"\n`;
+                    // תיאור
+                    tspl += `BLOCK 10,50,${labelWidthDots-20},${labelHeightDots-90},"2",0,1,1,2,"${item.description}"\n`;
+                    // מחיר
+                    let priceY = labelHeightDots - 90;
+                    tspl += `TEXT ${labelWidthDots/2},${priceY},"4",0,1,1,2,"${item.price.toFixed(2)}"\n`;
+                    // יבואן (כולל מותג משתנה)
+                    let impY = labelHeightDots - 30;
+                    // שים לב: כאן זה נשלח למדפסת. אם המדפסת לא תומכת עברית ב-TSPL, ייתכן שזה יודפס הפוך או בג'יבריש.
+                    // RawBT אמור לטפל בקידוד אם מוגדר לו נכון.
+                    tspl += `TEXT ${labelWidthDots/2},${impY},"1",0,1,1,2,"יצרן: ${brandName} | ארץ ייצור: סין"\n`;
+                    
+                    tspl += `PRINT ${qty},1\n`;
+                }
+            }
+        }
+
+        if (totalQty === 0) { alert("לא נמצאו פריטים להדפסה"); return; }
+
+        const base64Data = btoa(unescape(encodeURIComponent(tspl)));
+        const intentUrl = 'rawbt:base64,' + base64Data;
+        window.location.href = intentUrl;
     }
 
     function saveBatchData() {
@@ -388,7 +461,9 @@
 
     function clearAll() {
         if(confirm("האם לנקות את כל השורות?")) {
-            for (let i = 0; i < ROWS_COUNT; i++) clearRow(i);
+            for (let i = 0; i < ROWS_COUNT; i++) {
+                clearRow(i);
+            }
             saveBatchData();
             updateAllPreviews();
         }
@@ -408,6 +483,7 @@
                 if (i.sku) {
                     i.price = parseFloat(i.price);
                     if(i.brand) i.brand = String(i.brand).toLowerCase();
+                    
                     priceMap.set(String(i.sku).trim().toUpperCase(), i);
                     if (i.barcode) priceMap.set(String(i.barcode).trim(), i);
                 }
