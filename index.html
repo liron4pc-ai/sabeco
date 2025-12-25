@@ -96,7 +96,9 @@
     <div class="app-header">
         <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.src='sabeco.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#1e3a8a;">SABCO</div>
+
         <div class="header-title">הדפסת מדבקות</div>
+
         <img src="ACE.png" alt="ACE" class="logo-img" onerror="this.src='ace.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#dc2626;">ACE</div>
     </div>
@@ -165,7 +167,8 @@
         "tactix": "טקטיקס"
     };
     
-    const IMPORTER_BASE = "יבואן: סאבקו אספקה טכנית בע\"מ<br>כתובת: חוצות היוצר 13 אשקלון";
+    // ברירת המחדל אם לא נמצא מותג
+    const DEFAULT_BRAND = "טרופר"; 
     
     let html5QrCode = null;
     let scanningRowIndex = null;
@@ -179,11 +182,22 @@
     };
 
     // --- קבלת שם מותג בעברית ---
-    function getBrandName(item) {
-        if (item.brand && BRAND_TRANSLATIONS[item.brand]) {
-            return BRAND_TRANSLATIONS[item.brand];
+    function getFooterText(item) {
+        let brandName = DEFAULT_BRAND;
+        
+        if (item.brand) {
+            // המרה לאותיות קטנות כדי למנוע בעיות רגישות לאותיות
+            const brandKey = item.brand.toLowerCase();
+            if (BRAND_TRANSLATIONS[brandKey]) {
+                brandName = BRAND_TRANSLATIONS[brandKey];
+            } else {
+                // אם המותג לא במילון, נשתמש בשם כפי שהוא מופיע ב-JSON
+                // או נשאיר טרופר אם אתה מעדיף
+                brandName = item.brand; 
+            }
         }
-        return "טרופר"; // ברירת מחדל
+        
+        return `יצרן: ${brandName} | ארץ ייצור: סין`;
     }
 
     function updateLabelSizeSettings() {
@@ -216,7 +230,7 @@
             <span style="width:30px"></span></div>`;
             
         for (let i = 0; i < ROWS_COUNT; i++) {
-            // התיקון כאן: הוספת oninput="handleQtyInput(${i})" כדי לעדכן בזמן אמת
+            // התיקון כאן: הוספת oninput="handleQtyInput(${i})"
             html += `
             <div class="batch-row-container">
                 <div class="batch-row">
@@ -250,7 +264,7 @@
         }
     }
 
-    // פונקציה לעדכון כמות בזמן אמת
+    // פונקציה חדשה לעדכון מיידי של הכמות
     function handleQtyInput(i) {
         saveBatchData();
         updateAllPreviews();
@@ -349,15 +363,14 @@
     }
 
     function getLabelContent(item) {
-        const brand = getBrandName(item);
-        const footerInfo = `יצרן: ${brand} | ארץ ייצור: סין`;
+        const footerText = getFooterText(item); // שימוש בפונקציה הדינמית
         
         return `
             <div class="label-header">מק"ט: ${item.sku}</div>
             <div class="label-desc">${item.description}</div>
             <div class="label-footer">
                 <div class="label-price">₪${item.price.toFixed(2)}</div>
-                <div class="label-importer">${footerInfo}</div>
+                <div class="label-importer">${footerText}</div>
             </div>
         `;
     }
@@ -377,7 +390,7 @@
         tspl += `GAP 2 mm,0\n`;
         tspl += `DIRECTION 1\n`;
         tspl += `CLS\n`;
-        tspl += `CODEPAGE 1255\n`; // עברית
+        tspl += `CODEPAGE 1255\n`; 
 
         for (let i = 0; i < ROWS_COUNT; i++) {
             const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
@@ -388,15 +401,27 @@
                 const item = priceMap.get(sku);
                 if (item) {
                     totalQty += qty;
-                    const brand = getBrandName(item);
-                    
+                    // קבלת שם מותג
+                    let brandName = "טרופר"; // ברירת מחדל
+                    if (item.brand && BRAND_TRANSLATIONS[item.brand.toLowerCase()]) {
+                        brandName = BRAND_TRANSLATIONS[item.brand.toLowerCase()];
+                    } else if (item.brand) {
+                         brandName = item.brand; // אם לא במילון, מדפיס כמו ב-JSON
+                    }
+
                     tspl += `CLS\n`;
+                    // מק"ט
                     tspl += `TEXT ${labelWidthDots/2},10,"3",0,1,1,2,"${item.sku}"\n`;
+                    // תיאור
                     tspl += `BLOCK 10,50,${labelWidthDots-20},${labelHeightDots-90},"2",0,1,1,2,"${item.description}"\n`;
+                    // מחיר
                     let priceY = labelHeightDots - 90;
                     tspl += `TEXT ${labelWidthDots/2},${priceY},"4",0,1,1,2,"${item.price.toFixed(2)}"\n`;
+                    // יבואן (כולל מותג משתנה)
                     let impY = labelHeightDots - 30;
-                    tspl += `TEXT ${labelWidthDots/2},${impY},"1",0,1,1,2,"SABCO - ${brand}"\n`;
+                    // שים לב: כאן זה נשלח למדפסת. אם המדפסת לא תומכת עברית ב-TSPL, ייתכן שזה יודפס הפוך או בג'יבריש.
+                    // RawBT אמור לטפל בקידוד אם מוגדר לו נכון.
+                    tspl += `TEXT ${labelWidthDots/2},${impY},"1",0,1,1,2,"יצרן: ${brandName} | ארץ ייצור: סין"\n`;
                     
                     tspl += `PRINT ${qty},1\n`;
                 }
