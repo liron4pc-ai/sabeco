@@ -22,12 +22,14 @@
         
         .container { max-width: 800px; margin: 0 auto; background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
+        /* כותרת */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px; height: 70px; }
         .header-title { font-size: 1.2rem; font-weight: 800; color: var(--text); text-align: center; line-height: 1.1; flex-grow: 1; }
         .logo-img { max-height: 55px; max-width: 80px; object-fit: contain; }
         .logo-fallback { font-weight: 900; font-size: 1rem; color: #ccc; }
         .icon-barcode { width: 24px; height: 24px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         
+        /* גדלים וכפתורים */
         .size-controls { display: flex; gap: 8px; background: #eff6ff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe; align-items: center; justify-content: space-between; }
         .size-select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; width: 48%; font-size: 0.9rem; }
         
@@ -39,6 +41,7 @@
         .btn-scan-row { background: var(--scan-btn); padding: 0; width: 40px; height: 40px; font-size: 1.2rem; flex-shrink: 0; border-radius: 8px; }
         .btn-delete-row { background: #e5e7eb; color: #000; padding: 0; width: 30px; height: 30px; font-size: 1rem; flex-shrink: 0; border-radius: 6px; border: 1px solid #ccc; margin-right: 5px; }
 
+        /* טבלה */
         .batch-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
         .batch-row-container { display: flex; flex-direction: column; width: 100%; }
         .batch-row { display: flex; gap: 5px; align-items: center; width: 100%; }
@@ -52,12 +55,14 @@
         .error-msg { color: var(--danger); font-size: 0.75rem; margin-top: 2px; margin-right: 25px; display: none; }
         .error-msg.visible { display: block; }
 
+        /* תצוגה מקדימה */
         .preview-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
         .preview-title { font-size: 1.1rem; font-weight: bold; color: #444; margin-bottom: 10px; text-align: center; }
         .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; justify-items: center; }
         .preview-card { border: 1px solid #ddd; border-radius: 8px; padding: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 170px; }
         .preview-qty-badge { background: #e0e7ff; color: #3730a3; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; font-weight: bold; }
 
+        /* מודאל */
         #scanner-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
         #reader { width: 100%; max-width: 500px; background: black; }
         .close-scan { background: var(--danger); width: auto; margin-top: 20px; padding: 10px 30px; font-size: 1.2rem; }
@@ -89,12 +94,9 @@
 
 <div class="container">
     <div class="app-header">
-        <!-- לוגו ימין (סאבקו - תוקן ל-jpg) -->
         <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.src='sabeco.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#1e3a8a;">SABCO</div>
-
         <div class="header-title">הדפסת מדבקות</div>
-
         <img src="ACE.png" alt="ACE" class="logo-img" onerror="this.src='ace.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#dc2626;">ACE</div>
     </div>
@@ -134,7 +136,7 @@
         </div>
     </div>
 
-    <button class="btn-print" onclick="printBatch()">🖨️ הדפס הכל</button>
+    <button class="btn-print" onclick="printViaTSPL()">🖨️ הדפס הכל (TSPL)</button>
     <button class="btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
 
     <div style="text-align:center; margin-top:20px; font-size:0.7rem; color:#888;">
@@ -154,7 +156,17 @@
 <script>
     let priceMap = new Map();
     const ROWS_COUNT = 12;
-    const IMPORTER_INFO = "יבואן: סאבקו אספקה טכנית בע\"מ<br>כתובת: חוצות היוצר 13 אשקלון<br>יצרן: טרופר | ארץ ייצור: סין";
+    
+    // מילון מותגים - אם תרצה להוסיף עוד, פשוט תוסיף שורה כאן
+    const BRAND_TRANSLATIONS = {
+        "truper": "טרופר",
+        "stanley": "סטנלי",
+        "ingco": "אינגקו",
+        "tactix": "טקטיקס"
+    };
+    
+    const IMPORTER_BASE = "יבואן: סאבקו אספקה טכנית בע\"מ<br>כתובת: חוצות היוצר 13 אשקלון";
+    
     let html5QrCode = null;
     let scanningRowIndex = null;
 
@@ -165,6 +177,14 @@
         if (savedMap) loadData(savedMap);
         restoreBatchData();
     };
+
+    // --- קבלת שם מותג בעברית ---
+    function getBrandName(item) {
+        if (item.brand && BRAND_TRANSLATIONS[item.brand]) {
+            return BRAND_TRANSLATIONS[item.brand];
+        }
+        return "טרופר"; // ברירת מחדל
+    }
 
     function updateLabelSizeSettings() {
         const w = document.getElementById('widthSelect').value;
@@ -196,14 +216,14 @@
             <span style="width:30px"></span></div>`;
             
         for (let i = 0; i < ROWS_COUNT; i++) {
+            // התיקון כאן: הוספת oninput="handleQtyInput(${i})" כדי לעדכן בזמן אמת
             html += `
             <div class="batch-row-container">
                 <div class="batch-row">
                     <span class="row-num">${i+1}</span>
                     <input type="text" id="sku-${i}" class="input-sku" onchange="handleRowChange(${i})" onkeypress="handleEnter(event, ${i}, 'sku')">
                     <button class="btn-scan-row" onclick="startScannerForRow(${i})">${barcodeIcon}</button>
-                    <!-- הוספתי onchange="handleQtyChange(${i})" כדי לרענן תצוגה גם בשינוי כמות -->
-                    <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" onchange="handleQtyChange(${i})" onkeypress="handleEnter(event, ${i}, 'qty')">
+                    <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="handleQtyInput(${i})" onchange="saveBatchData()" onkeypress="handleEnter(event, ${i}, 'qty')">
                     <button class="btn-delete-row" onclick="clearRow(${i})">✕</button>
                 </div>
                 <div id="error-${i}" class="error-msg">* מק"ט או ברקוד לא נמצא</div>
@@ -222,7 +242,7 @@
                     document.getElementById(`qty-${i}`).focus();
                 }
             } else if (fieldType === 'qty') {
-                handleQtyChange(i); // עדכון גם באנטר על כמות
+                handleQtyInput(i);
                 if (i < ROWS_COUNT - 1) {
                     document.getElementById(`sku-${i+1}`).focus();
                 }
@@ -230,8 +250,8 @@
         }
     }
 
-    // פונקציה חדשה לטיפול בשינוי כמות
-    function handleQtyChange(i) {
+    // פונקציה לעדכון כמות בזמן אמת
+    function handleQtyInput(i) {
         saveBatchData();
         updateAllPreviews();
     }
@@ -295,7 +315,6 @@
         const cleanCode = code.trim().toUpperCase();
         const skuInput = document.getElementById(`sku-${scanningRowIndex}`);
         skuInput.value = cleanCode;
-        
         handleRowChange(scanningRowIndex);
     }
 
@@ -330,24 +349,36 @@
     }
 
     function getLabelContent(item) {
+        const brand = getBrandName(item);
+        const footerInfo = `יצרן: ${brand} | ארץ ייצור: סין`;
+        
         return `
             <div class="label-header">מק"ט: ${item.sku}</div>
             <div class="label-desc">${item.description}</div>
             <div class="label-footer">
                 <div class="label-price">₪${item.price.toFixed(2)}</div>
-                <div class="label-importer">${IMPORTER_INFO}</div>
+                <div class="label-importer">${footerInfo}</div>
             </div>
         `;
     }
 
-    function printBatch() {
-        const w = document.getElementById('widthSelect').value;
-        const h = document.getElementById('heightSelect').value;
-        document.getElementById('dynamicPrintStyle').innerHTML = 
-            `@media print { @page { size: ${w}mm ${h}mm; margin: 0; } .label { width: ${w}mm !important; height: ${h}mm !important; } }`;
+    // --- הדפסה ישירה ב-TSPL עם מותג ---
+    function printViaTSPL() {
+        const w = parseInt(document.getElementById('widthSelect').value);
+        const h = parseInt(document.getElementById('heightSelect').value);
+        const dotsPerMm = 8;
+        const labelWidthDots = w * dotsPerMm;
+        const labelHeightDots = h * dotsPerMm;
+        
+        let tspl = "";
+        let totalQty = 0;
 
-        let html = '';
-        let hasItems = false;
+        tspl += `SIZE ${w} mm,${h} mm\n`;
+        tspl += `GAP 2 mm,0\n`;
+        tspl += `DIRECTION 1\n`;
+        tspl += `CLS\n`;
+        tspl += `CODEPAGE 1255\n`; // עברית
+
         for (let i = 0; i < ROWS_COUNT; i++) {
             const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
             let qtyVal = document.getElementById(`qty-${i}`).value;
@@ -356,15 +387,27 @@
             if (sku && qty > 0) {
                 const item = priceMap.get(sku);
                 if (item) {
-                    hasItems = true;
-                    for (let k = 0; k < qty; k++) { html += `<div class="label">${getLabelContent(item)}</div>`; }
+                    totalQty += qty;
+                    const brand = getBrandName(item);
+                    
+                    tspl += `CLS\n`;
+                    tspl += `TEXT ${labelWidthDots/2},10,"3",0,1,1,2,"${item.sku}"\n`;
+                    tspl += `BLOCK 10,50,${labelWidthDots-20},${labelHeightDots-90},"2",0,1,1,2,"${item.description}"\n`;
+                    let priceY = labelHeightDots - 90;
+                    tspl += `TEXT ${labelWidthDots/2},${priceY},"4",0,1,1,2,"${item.price.toFixed(2)}"\n`;
+                    let impY = labelHeightDots - 30;
+                    tspl += `TEXT ${labelWidthDots/2},${impY},"1",0,1,1,2,"SABCO - ${brand}"\n`;
+                    
+                    tspl += `PRINT ${qty},1\n`;
                 }
             }
         }
 
-        if (!hasItems) { alert("אין פריטים תקינים להדפסה"); return; }
-        document.getElementById('printArea').innerHTML = html;
-        setTimeout(() => window.print(), 200);
+        if (totalQty === 0) { alert("לא נמצאו פריטים להדפסה"); return; }
+
+        const base64Data = btoa(unescape(encodeURIComponent(tspl)));
+        const intentUrl = 'rawbt:base64,' + base64Data;
+        window.location.href = intentUrl;
     }
 
     function saveBatchData() {
@@ -418,6 +461,9 @@
             data.forEach(i => {
                 if (i.sku) {
                     i.price = parseFloat(i.price);
+                    // שמירת המותג
+                    if(i.brand) i.brand = String(i.brand).toLowerCase();
+                    
                     priceMap.set(String(i.sku).trim().toUpperCase(), i);
                     if (i.barcode) priceMap.set(String(i.barcode).trim(), i);
                 }
@@ -436,3 +482,5 @@
 
 </body>
 </html>
+
+
