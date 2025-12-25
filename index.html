@@ -96,9 +96,7 @@
     <div class="app-header">
         <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.src='sabeco.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#1e3a8a;">SABCO</div>
-
         <div class="header-title">הדפסת מדבקות</div>
-
         <img src="ACE.png" alt="ACE" class="logo-img" onerror="this.src='ace.png'; this.onerror=null;">
         <div class="logo-fallback" style="display:none; color:#dc2626;">ACE</div>
     </div>
@@ -167,6 +165,7 @@
         "tactix": "טקטיקס"
     };
     
+    // ברירת המחדל אם לא נמצא מותג
     const DEFAULT_BRAND = "טרופר"; 
     
     let html5QrCode = null;
@@ -226,7 +225,7 @@
             <span style="width:30px"></span></div>`;
             
         for (let i = 0; i < ROWS_COUNT; i++) {
-            // התיקון הקריטי: הוספתי oninput="handleQtyInput(${i})" לשדה הכמות
+            // התיקון כאן: הוספת oninput="handleQtyInput(${i})" כדי לעדכן בזמן אמת
             html += `
             <div class="batch-row-container">
                 <div class="batch-row">
@@ -482,6 +481,7 @@
             data.forEach(i => {
                 if (i.sku) {
                     i.price = parseFloat(i.price);
+                    // שמירת המותג
                     if(i.brand) i.brand = String(i.brand).toLowerCase();
                     
                     priceMap.set(String(i.sku).trim().toUpperCase(), i);
