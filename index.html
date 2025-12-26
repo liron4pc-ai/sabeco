@@ -28,6 +28,7 @@
         
         button { border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; padding: 10px; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-file { background: #6b7280; width: 100%; margin-bottom: 10px; font-size: 0.9rem; padding: 8px; }
+        
         .btn-print { background: #16a34a; width: 100%; font-size: 1.2rem; padding: 15px; margin-top: 15px; position: sticky; bottom: 10px; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: background 0.2s; }
         .btn-print:active { transform: scale(0.98); background: #15803d; }
         
@@ -92,38 +93,37 @@
 
     <div id="statusMessage">נא לטעון מחירון</div>
 
-    <!-- אזור הגדרות מורחב -->
+    <!-- אזור הגדרות -->
     <div class="settings-area">
-        <!-- שורה 1: בחירת אפליקציה -->
         <div class="controls-row">
             <div style="width: 100%">
-                <label class="control-label">יעד הדפסה (לחץ לבחירה):</label>
+                <label class="control-label">שיטת שליחה (מומלץ לבחור 'שיתוף'):</label>
                 <select id="appProtocolSelect" class="app-select" onchange="saveSettings()">
-                    <option value="share">📤 בחירת אפליקציה (שיתוף)</option>
-                    <option value="labelprinter">Label Printer (ישיר)</option>
-                    <option value="rawbt">RawBT (ישיר)</option>
-                    <option value="printerplus">Printer+ (ישיר)</option>
-                    <option value="dlabel">DLabel (ישיר)</option>
+                    <option value="share">📤 שיתוף מערכת (עובד עם הכל)</option>
+                    <option value="labelprinter">Label Printer (אפליקציה)</option>
+                    <option value="rawbt">RawBT (אפליקציה)</option>
                 </select>
             </div>
         </div>
 
-        <!-- שורה 2: גדלים -->
         <div class="controls-row">
             <div class="control-group">
                 <label class="control-label">רוחב:</label>
                 <select id="widthSelect" class="size-select" onchange="updateLabelSizeSettings()">
                     <option value="30">30 מ"מ</option>
-                    <option value="33" selected>33 מ"מ</option>
+                    <option value="33">33 מ"מ</option>
                     <option value="40">40 מ"מ</option>
-                    <option value="50">50 מ"מ</option>
+                    <option value="50" selected>50 מ"מ</option>
+                    <option value="60">60 מ"מ</option>
+                    <option value="70">70 מ"מ</option>
                 </select>
             </div>
             <div class="control-group">
                 <label class="control-label">גובה:</label>
                 <select id="heightSelect" class="size-select" onchange="updateLabelSizeSettings()">
-                    <option value="30">30 מ"מ</option>
-                    <option value="33" selected>33 מ"מ</option>
+                    <option value="25">25 מ"מ</option>
+                    <option value="30" selected>30 מ"מ</option>
+                    <option value="33">33 מ"מ</option>
                     <option value="40">40 מ"מ</option>
                     <option value="50">50 מ"מ</option>
                 </select>
@@ -141,6 +141,7 @@
         <div id="previewGrid" class="preview-grid"></div>
     </div>
 
+    <!-- כפתור פעולה ראשי -->
     <button class="btn-print" onclick="printViaImage()">🖨️ הדפס / שתף</button>
     <button class="btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
 
@@ -185,7 +186,6 @@
         return `יצרן: ${brandName} | ארץ ייצור: סין`;
     }
 
-    // פונקציית עזר להמרת DataURL לקובץ (עבור שיתוף)
     function dataURLtoBlob(dataurl) {
         var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
             bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -195,101 +195,87 @@
         return new Blob([u8arr], {type:mime});
     }
 
-    function printViaImage() {
-        const w = document.getElementById('widthSelect').value;
-        const h = document.getElementById('heightSelect').value;
-        const selectedProtocol = document.getElementById('appProtocolSelect').value || 'share';
-        const renderArea = document.getElementById('hidden-render-area');
-        
-        let totalQty = 0;
-        let htmlContent = `<div style="background:white; width:${w}mm; display:flex; flex-direction:column;">`;
+    // פונקציה ליצירת הקנבס
+    function generateCanvas() {
+        return new Promise((resolve, reject) => {
+            const w = document.getElementById('widthSelect').value;
+            const h = document.getElementById('heightSelect').value;
+            const renderArea = document.getElementById('hidden-render-area');
+            
+            let totalQty = 0;
+            let htmlContent = `<div style="background:white; width:${w}mm; display:flex; flex-direction:column;">`;
 
-        for (let i = 0; i < ROWS_COUNT; i++) {
-            const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
-            let qtyVal = document.getElementById(`qty-${i}`).value;
-            const qty = (qtyVal === '' && sku !== '') ? 1 : parseInt(qtyVal);
+            for (let i = 0; i < ROWS_COUNT; i++) {
+                const sku = document.getElementById(`sku-${i}`).value.trim().toUpperCase();
+                let qtyVal = document.getElementById(`qty-${i}`).value;
+                const qty = (qtyVal === '' && sku !== '') ? 1 : parseInt(qtyVal);
 
-            if (sku && qty > 0) {
-                const item = priceMap.get(sku);
-                if (item) {
-                    totalQty += qty;
-                    for (let k = 0; k < qty; k++) {
-                        htmlContent += `
-                        <div style="width:${w}mm; height:${h}mm; box-sizing:border-box; padding:1mm; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:sans-serif; background:white; border-bottom:1px dashed #ccc; page-break-after:always;">
-                            ${getLabelContent(item)}
-                        </div>`;
+                if (sku && qty > 0) {
+                    const item = priceMap.get(sku);
+                    if (item) {
+                        totalQty += qty;
+                        for (let k = 0; k < qty; k++) {
+                            htmlContent += `
+                            <div style="width:${w}mm; height:${h}mm; box-sizing:border-box; padding:1mm; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:sans-serif; background:white; border-bottom:1px dashed #ccc; page-break-after:always;">
+                                ${getLabelContent(item)}
+                            </div>`;
+                        }
                     }
                 }
             }
-        }
-        htmlContent += `</div>`;
+            htmlContent += `</div>`;
 
-        if (totalQty === 0) { 
-            setStatus('לא נמצאו פריטים להדפסה', 'error');
-            return; 
-        }
+            if (totalQty === 0) { 
+                setStatus('לא נמצאו פריטים', 'error');
+                reject('NO_ITEMS');
+                return; 
+            }
+            
+            renderArea.innerHTML = htmlContent;
+            setStatus('מעבד תמונה...', 'success');
+
+            html2canvas(renderArea.firstChild, { 
+                scale: 3, 
+                useCORS: true, 
+                backgroundColor: "#ffffff",
+                logging: false 
+            }).then(resolve).catch(reject);
+        });
+    }
+
+    // הדפסה / שיתוף
+    function printViaImage() {
+        const selectedProtocol = document.getElementById('appProtocolSelect').value || 'share';
         
-        renderArea.innerHTML = htmlContent;
-        setStatus('מייצר תמונה...', 'success');
-
-        // שימוש בפרומיס כדי לוודא שאין תקיעות
-        html2canvas(renderArea.firstChild, { 
-            scale: 3, 
-            useCORS: true, 
-            backgroundColor: "#ffffff",
-            logging: false 
-        }).then(async (canvas) => {
+        generateCanvas().then(async (canvas) => {
             const base64Data = canvas.toDataURL('image/png');
             
-            // 1. מצב שיתוף (System Share)
             if (selectedProtocol === 'share') {
                 if (navigator.share) {
                     try {
                         const blob = dataURLtoBlob(base64Data);
-                        const file = new File([blob], "labels.png", { type: "image/png" });
+                        const file = new File([blob], "labels_print.png", { type: "image/png" });
                         await navigator.share({
                             files: [file],
                             title: 'הדפסת מדבקות',
-                            text: 'מדבקות נשלחו להדפסה'
+                            text: 'קובץ מדבקות מוכן להדפסה'
                         });
-                        setStatus('השיתוף הושלם בהצלחה', 'success');
+                        setStatus('השיתוף נפתח', 'success');
                     } catch (err) {
-                        console.error("Share failed:", err);
-                        // אם המשתמש ביטל את השיתוף, זה לא נחשב שגיאה קריטית
-                        if (err.name !== 'AbortError') {
-                            setStatus('שגיאה בשיתוף: ' + err.message, 'error');
-                            alert('השיתוף נכשל. נסה דפדפן אחר (Chrome מומלץ).');
-                        } else {
-                            setStatus('השיתוף בוטל', '');
-                        }
+                        if (err.name !== 'AbortError') alert('השיתוף נכשל.');
                     }
                 } else {
-                    setStatus('הדפדפן לא תומך בשיתוף קבצים', 'error');
-                    alert('הדפדפן שלך לא תומך בשיתוף ישיר. נסה לבחור אפליקציה ספציפית מהרשימה.');
+                    alert('המכשיר לא תומך בשיתוף ישיר.');
                 }
-            } 
-            // 2. מצב אפליקציה ישירה (RawBT/LabelPrinter וכו')
-            else {
+            } else {
                 const base64Content = base64Data.split(',')[1];
-                const intentUrl = `${selectedProtocol}:data:image/png;base64,${base64Content}`;
-                
-                // נסיון ניווט
-                const startTime = Date.now();
-                window.location.href = intentUrl;
-                
-                // בדיקה פשוטה אם עבר זמן ועדיין אנחנו כאן (לא תמיד עובד בגלל אבטחת דפדפן, אבל נותן אינדיקציה)
-                setTimeout(() => {
-                    if (document.hidden) {
-                        setStatus('נשלח לאפליקציה', 'success');
-                    } else {
-                        setStatus('נשלח... (אם לא נפתח, האפליקציה לא מותקנת)', 'success');
-                    }
-                }, 1000);
+                window.location.href = `${selectedProtocol}:data:image/png;base64,${base64Content}`;
             }
         }).catch(err => {
-            console.error(err);
-            setStatus('שגיאה ביצירת תמונה', 'error');
-            alert('אירעה שגיאה בעיבוד התמונה: ' + err.message);
+            if (err !== 'NO_ITEMS') {
+                console.error(err);
+                setStatus('שגיאה ביצירה', 'error');
+            }
         });
     }
 
@@ -331,16 +317,17 @@
                 const settings = JSON.parse(saved);
                 if (settings.w) document.getElementById('widthSelect').value = settings.w;
                 if (settings.h) document.getElementById('heightSelect').value = settings.h;
+                // ברירת מחדל לשיתוף אם אין שמירה קודמת או שהייתה שמירה על אפליקציה שלא עובדת
                 if (settings.protocol) document.getElementById('appProtocolSelect').value = settings.protocol;
-            } catch(e) {
-                // תמיכה לאחור
-            }
+                else document.getElementById('appProtocolSelect').value = "share";
+            } catch(e) { }
+        } else {
+            // ברירת מחדל ל-Share ו-50x30
+            document.getElementById('widthSelect').value = "50";
+            document.getElementById('heightSelect').value = "30";
+            document.getElementById('appProtocolSelect').value = "share";
         }
-        const w = document.getElementById('widthSelect').value;
-        const h = document.getElementById('heightSelect').value;
-        const minDim = Math.min(w, h);
-        const scale = minDim / 30; 
-        document.documentElement.style.setProperty('--scale-factor', scale);
+        updateLabelSizeSettings();
     }
 
     function generateRows() {
