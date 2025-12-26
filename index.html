@@ -6,7 +6,6 @@
     <title>מדפסת מדבקות שטח (סאבקו)</title>
     
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <!-- ספרייה קריטית להמרת המדבקות לתמונה -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <style>
@@ -20,12 +19,15 @@
         .logo-img { max-height: 55px; max-width: 80px; object-fit: contain; }
         .icon-barcode { width: 24px; height: 24px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         
-        .size-controls { display: flex; gap: 8px; background: #eff6ff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe; justify-content: space-between; }
-        .size-select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; width: 48%; font-size: 0.9rem; }
+        /* אזור ההגדרות */
+        .settings-area { background: #eff6ff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bfdbfe; display: flex; flex-direction: column; gap: 10px; }
+        .controls-row { display: flex; gap: 8px; justify-content: space-between; }
+        .control-group { width: 48%; }
+        .control-label { font-size: 0.8rem; display:block; margin-bottom: 2px; font-weight: bold; color: #1e3a8a; }
+        .app-select, .size-select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; width: 100%; font-size: 0.9rem; background: white; }
         
         button { border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; padding: 10px; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-file { background: #6b7280; width: 100%; margin-bottom: 10px; font-size: 0.9rem; padding: 8px; }
-        /* כפתור ירוק להדפסת תמונה - מסמן שזה הפתרון היציב */
         .btn-print { background: #16a34a; width: 100%; font-size: 1.2rem; padding: 15px; margin-top: 15px; position: sticky; bottom: 10px; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
         .btn-clear { background: var(--danger); width: 100%; margin-top: 10px; font-size: 0.9rem; padding: 8px; }
         .btn-scan-row { background: var(--scan-btn); padding: 0; width: 40px; height: 40px; font-size: 1.2rem; flex-shrink: 0; border-radius: 8px; }
@@ -64,12 +66,10 @@
         .label-footer { margin-top: 3px; display: flex; flex-direction: column; align-items: center; border-top: none; padding-top: 3px; }
         .label-price { font-size: calc(14pt * var(--scale-factor)); font-weight: 900; direction: ltr; line-height: 1; margin-bottom: 2px; }
         
-        /* פרטי יבואן - מלאים וברורים */
         .label-importer { font-size: calc(4.5pt * var(--scale-factor)); text-align: center; line-height: 1.1; color: #000; width: 100%; white-space: nowrap; font-weight: bold; }
         .label-address { font-size: calc(4pt * var(--scale-factor)); text-align: center; line-height: 1; color: #333; width: 100%; white-space: nowrap; }
         .label-brand { font-size: calc(4.5pt * var(--scale-factor)); text-align: center; line-height: 1.1; color: #000; width: 100%; }
 
-        /* אזור נסתר לייצור תמונה */
         #hidden-render-area {
             position: absolute;
             top: -9999px;
@@ -83,32 +83,47 @@
 <div class="container">
     <div class="app-header">
         <img src="sabeco.jpg" alt="SABCO" class="logo-img" onerror="this.src='sabeco.png'; this.onerror=null;">
-        <div class="logo-fallback" style="display:none; color:#1e3a8a;">SABCO</div>
         <div class="header-title">הדפסת מדבקות</div>
         <img src="ACE.png" alt="ACE" class="logo-img" onerror="this.src='ace.png'; this.onerror=null;">
-        <div class="logo-fallback" style="display:none; color:#dc2626;">ACE</div>
     </div>
 
     <div id="statusMessage">נא לטעון מחירון</div>
 
-    <div class="size-controls">
-        <div style="width: 48%">
-            <label style="font-size: 0.8rem; display:block;">רוחב:</label>
-            <select id="widthSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
-                <option value="30">30 מ"מ</option>
-                <option value="33" selected>33 מ"מ</option>
-                <option value="40">40 מ"מ</option>
-                <option value="50">50 מ"מ</option>
-            </select>
+    <!-- אזור הגדרות מורחב -->
+    <div class="settings-area">
+        <!-- שורה 1: בחירת אפליקציה -->
+        <div class="controls-row">
+            <div style="width: 100%">
+                <label class="control-label">אפליקציית הדפסה:</label>
+                <select id="appProtocolSelect" class="app-select" onchange="saveSettings()">
+                    <option value="labelprinter">Label Printer (מומלץ)</option>
+                    <option value="rawbt">RawBT</option>
+                    <option value="printerplus">Printer+</option>
+                    <option value="dlabel">DLabel</option>
+                </select>
+            </div>
         </div>
-        <div style="width: 48%">
-            <label style="font-size: 0.8rem; display:block;">גובה:</label>
-            <select id="heightSelect" class="size-select" onchange="updateLabelSizeSettings()" style="width:100%">
-                <option value="30">30 מ"מ</option>
-                <option value="33" selected>33 מ"מ</option>
-                <option value="40">40 מ"מ</option>
-                <option value="50">50 מ"מ</option>
-            </select>
+
+        <!-- שורה 2: גדלים -->
+        <div class="controls-row">
+            <div class="control-group">
+                <label class="control-label">רוחב:</label>
+                <select id="widthSelect" class="size-select" onchange="updateLabelSizeSettings()">
+                    <option value="30">30 מ"מ</option>
+                    <option value="33" selected>33 מ"מ</option>
+                    <option value="40">40 מ"מ</option>
+                    <option value="50">50 מ"מ</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label class="control-label">גובה:</label>
+                <select id="heightSelect" class="size-select" onchange="updateLabelSizeSettings()">
+                    <option value="30">30 מ"מ</option>
+                    <option value="33" selected>33 מ"מ</option>
+                    <option value="40">40 מ"מ</option>
+                    <option value="50">50 מ"מ</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -122,8 +137,7 @@
         <div id="previewGrid" class="preview-grid"></div>
     </div>
 
-    <!-- כפתור הדפסה ששולח תמונה -->
-    <button class="btn-print" onclick="printViaImage()">🖨️ הדפס הכל (תמונה)</button>
+    <button class="btn-print" onclick="printViaImage()">🖨️ שלח להדפסה</button>
     <button class="btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
 
     <div style="text-align:center; margin-top:20px; font-size:0.7rem; color:#888;">פותח ע"י <b>לירון אופק</b> ⚡</div>
@@ -135,7 +149,6 @@
     <button class="close-scan" onclick="stopScanner()">ביטול</button>
 </div>
 
-<!-- אזור נסתר לייצור תמונה -->
 <div id="hidden-render-area"></div>
 
 <script>
@@ -168,10 +181,12 @@
         return `יצרן: ${brandName} | ארץ ייצור: סין`;
     }
 
-    // --- יצירת תמונה והדפסה דרך Label Printer ---
     function printViaImage() {
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
+        
+        // קריאת האפליקציה הנבחרת
+        const selectedProtocol = document.getElementById('appProtocolSelect').value || 'labelprinter';
         const renderArea = document.getElementById('hidden-render-area');
         
         let totalQty = 0;
@@ -202,16 +217,14 @@
         renderArea.innerHTML = htmlContent;
         setStatus('מייצר תמונה...', 'success');
 
-        // יצירת תמונה חדה (scale: 3)
         html2canvas(renderArea.firstChild, { scale: 3, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
             const base64Image = canvas.toDataURL('image/png').split(',')[1];
             
-            // --- שינוי פרוטוקול הדפסה ל-labelprinter ---
-            // במקום rawbt: השתמשנו ב-labelprinter:
-            const intentUrl = 'labelprinter:data:image/png;base64,' + base64Image;
+            // בניית ה-URL בהתאם לבחירה
+            const intentUrl = `${selectedProtocol}:data:image/png;base64,${base64Image}`;
             
             window.location.href = intentUrl;
-            setStatus('נשלח להדפסה', 'success');
+            setStatus(`נשלח להדפסה (${selectedProtocol})`, 'success');
         }).catch(err => {
             console.error(err);
             setStatus('שגיאה ביצירת תמונה', 'error');
@@ -232,25 +245,50 @@
         `;
     }
 
-    // --- שאר הפונקציות ---
     function updateLabelSizeSettings() {
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
         const minDim = Math.min(w, h);
         const scale = minDim / 30; 
         document.documentElement.style.setProperty('--scale-factor', scale);
-        localStorage.setItem('labelSize', JSON.stringify({w, h}));
+        
+        // שמירת כל ההגדרות (גודל + אפליקציה)
+        saveSettings();
         updateAllPreviews();
     }
     
+    function saveSettings() {
+        const w = document.getElementById('widthSelect').value;
+        const h = document.getElementById('heightSelect').value;
+        const protocol = document.getElementById('appProtocolSelect').value;
+        
+        localStorage.setItem('printSettings', JSON.stringify({ w, h, protocol }));
+    }
+
     function loadSettings() {
-        const saved = localStorage.getItem('labelSize');
+        const saved = localStorage.getItem('printSettings');
         if (saved) {
-            const {w, h} = JSON.parse(saved);
-            document.getElementById('widthSelect').value = w;
-            document.getElementById('heightSelect').value = h;
+            try {
+                const settings = JSON.parse(saved);
+                if (settings.w) document.getElementById('widthSelect').value = settings.w;
+                if (settings.h) document.getElementById('heightSelect').value = settings.h;
+                if (settings.protocol) document.getElementById('appProtocolSelect').value = settings.protocol;
+            } catch(e) {
+                // תמיכה לאחור לגרסה ישנה ששמרה רק גודל
+                const oldSize = localStorage.getItem('labelSize');
+                if (oldSize) {
+                    const {w, h} = JSON.parse(oldSize);
+                    document.getElementById('widthSelect').value = w;
+                    document.getElementById('heightSelect').value = h;
+                }
+            }
         }
-        updateLabelSizeSettings();
+        // עדכון ויזואלי של הגדלים לפי מה שנטען
+        const w = document.getElementById('widthSelect').value;
+        const h = document.getElementById('heightSelect').value;
+        const minDim = Math.min(w, h);
+        const scale = minDim / 30; 
+        document.documentElement.style.setProperty('--scale-factor', scale);
     }
 
     function generateRows() {
@@ -258,7 +296,6 @@
         const barcodeIcon = `<svg class="icon-barcode" viewBox="0 0 24 24" style="width:24px; height:24px; stroke:white; fill:none; stroke-width:2;"><path d="M4 6v12M8 6v12M12 6v12M16 6v12M20 6v12" /></svg>`;
         let html = `<div style="display:flex; font-size:0.8rem; color:#666; margin-bottom:2px;"><span style="width:20px"></span><span style="flex:1; text-align:right; margin-right:5px;">מק"ט</span><span style="width:40px"></span><span style="width:50px; text-align:center;">כמות</span><span style="width:30px"></span></div>`;
         for (let i = 0; i < ROWS_COUNT; i++) {
-            // תוקן: oninput לעדכון מיידי
             html += `<div class="batch-row" style="margin-bottom:8px; display:flex; align-items:center; gap:5px;">
                 <span class="row-num">${i+1}</span>
                 <input type="text" id="sku-${i}" class="input-sku" onchange="handleRowChange(${i})" onkeypress="handleEnter(event, ${i}, 'sku')">
@@ -439,4 +476,5 @@
 
 </body>
 </html>
+
 
