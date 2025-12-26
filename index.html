@@ -168,7 +168,7 @@
         return `יצרן: ${brandName} | ארץ ייצור: סין`;
     }
 
-    // --- יצירת תמונה והדפסה דרך RawBT ---
+    // --- יצירת תמונה והדפסה דרך Label Printer ---
     function printViaImage() {
         const w = document.getElementById('widthSelect').value;
         const h = document.getElementById('heightSelect').value;
@@ -205,8 +205,11 @@
         // יצירת תמונה חדה (scale: 3)
         html2canvas(renderArea.firstChild, { scale: 3, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
             const base64Image = canvas.toDataURL('image/png').split(',')[1];
-            // שליחה ל-RawBT
-            const intentUrl = 'rawbt:data:image/png;base64,' + base64Image;
+            
+            // --- שינוי פרוטוקול הדפסה ל-labelprinter ---
+            // במקום rawbt: השתמשנו ב-labelprinter:
+            const intentUrl = 'labelprinter:data:image/png;base64,' + base64Image;
+            
             window.location.href = intentUrl;
             setStatus('נשלח להדפסה', 'success');
         }).catch(err => {
@@ -421,9 +424,19 @@
         reader.onload = (ev) => loadData(ev.target.result);
         reader.readAsText(e.target.files[0]);
     }
+
+    function clearAll() {
+        for (let i = 0; i < ROWS_COUNT; i++) {
+            document.getElementById(`sku-${i}`).value = '';
+            document.getElementById(`qty-${i}`).value = '';
+            document.getElementById(`sku-${i}`).classList.remove('error');
+            document.getElementById(`error-${i}`).classList.remove('visible');
+        }
+        saveBatchData();
+        updateAllPreviews();
+    }
 </script>
 
 </body>
 </html>
-
 
