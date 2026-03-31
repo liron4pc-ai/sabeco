@@ -168,7 +168,7 @@
         const item = priceMap.get(aceVal);
         
         if (item && item.sku) {
-            resText.innerHTML = `מק"ט סאבקו: <span style="color:blue">${item.sku}</span>`;
+            resText.innerHTML = `מקט סאבקו: <span style="color:blue">${item.sku}</span>`;
             resArea.style.display = 'flex';
             document.getElementById('copyBtn').setAttribute('data-sku', item.sku);
         } else {
@@ -200,11 +200,11 @@
                         price: parseFloat(i.price),
                         brand: i.brand ? String(i.brand).toLowerCase() : DEFAULT_BRAND
                     };
-                    // מיפוי לפי מק"ט סאבקו
+                    // מיפוי לפי מקט סאבקו
                     priceMap.set(String(i.sku).trim().toUpperCase(), item);
                     // מיפוי לפי ברקוד
                     if (i.barcode) priceMap.set(String(i.barcode).trim(), item);
-                    // מיפוי לפי מק"ט אייס (השדרוג החדש)
+                    // מיפוי לפי מקט אייס (השדרוג החדש)
                     if (i.skuace) priceMap.set(String(i.skuace).trim().toUpperCase(), item);
                 }
             });
@@ -221,7 +221,7 @@
             html += `
             <div class="batch-row">
                 <span style="width:20px; font-size:0.7rem">${i+1}</span>
-                <input type="text" id="sku-${i}" class="input-sku" placeholder="מק"ט / ברקוד / ACE" onchange="handleRowChange(${i})">
+                <input type="text" id="sku-${i}" class="input-sku" placeholder="מקט / ברקוד / ACE" onchange="handleRowChange(${i})">
                 <button style="background:var(--scan-btn); width:40px;" onclick="startScannerForRow(${i})">📷</button>
                 <input type="tel" id="qty-${i}" class="input-qty" placeholder="1" oninput="handleQtyInput(${i})">
                 <button class="btn-delete-row" style="background:#ddd; color:black; width:30px" onclick="clearRow(${i})">✕</button>
@@ -240,7 +240,7 @@
             if (item) {
                 skuInput.classList.remove('error');
                 errorMsg.classList.remove('visible');
-                // עדכון הערך בשדה למק"ט הפנימי סאבקו לנוחות
+                // עדכון הערך בשדה למקט הפנימי סאבקו לנוחות
                 skuInput.value = item.sku; 
                 if (document.getElementById(`qty-${i}`).value === '') document.getElementById(`qty-${i}`).value = 1;
             } else {
@@ -255,7 +255,7 @@
     function getLabelContent(item) {
         const brandName = BRAND_TRANSLATIONS[item.brand] || item.brand || DEFAULT_BRAND;
         return `
-            <div class="label-header">מק"ט: ${item.sku}</div>
+            <div class="label-header">מקט: ${item.sku}</div>
             <div class="label-desc">${item.description}</div>
             <div class="label-footer" style="display:flex; flex-direction:column; align-items:center;">
                 <div class="label-price">₪${item.price.toFixed(2)}</div>
