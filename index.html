@@ -168,7 +168,7 @@
         const item = priceMap.get(aceVal);
         
         if (item && item.sku) {
-            resText.innerHTML = `מק"ט שלנו: <span style="color:blue">${item.sku}</span>`;
+            resText.innerHTML = `מק"ט סאבקו: <span style="color:blue">${item.sku}</span>`;
             resArea.style.display = 'flex';
             document.getElementById('copyBtn').setAttribute('data-sku', item.sku);
         } else {
@@ -200,7 +200,7 @@
                         price: parseFloat(i.price),
                         brand: i.brand ? String(i.brand).toLowerCase() : DEFAULT_BRAND
                     };
-                    // מיפוי לפי מק"ט שלנו
+                    // מיפוי לפי מק"ט סאבקו
                     priceMap.set(String(i.sku).trim().toUpperCase(), item);
                     // מיפוי לפי ברקוד
                     if (i.barcode) priceMap.set(String(i.barcode).trim(), item);
@@ -240,7 +240,7 @@
             if (item) {
                 skuInput.classList.remove('error');
                 errorMsg.classList.remove('visible');
-                // עדכון הערך בשדה למק"ט הפנימי שלנו לנוחות
+                // עדכון הערך בשדה למק"ט הפנימי סאבקו לנוחות
                 skuInput.value = item.sku; 
                 if (document.getElementById(`qty-${i}`).value === '') document.getElementById(`qty-${i}`).value = 1;
             } else {
